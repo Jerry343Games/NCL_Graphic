@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "Data.h"
 #include <algorithm>
 using namespace std;
 const int POST_PASSES = 10;
@@ -25,8 +26,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	soldierMat = new MeshMaterial("Role_T.mat");
 
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
-
-
 
 	//load Textures
 	treeTex = SOIL_load_OGL_texture(TEXTUREDIR"tree_diffuse.png",
@@ -605,31 +604,67 @@ void Renderer::UpdateScene(float dt) {
 
 	root->Update(dt);
 }
-void Renderer::AutoUpdateCamera(float dt)
-{
+void Renderer::AutoUpdateCamera(float dt) {
+
+	// 获取 heightMap 尺寸作为圆心位置的参考
 	Vector3 heightmapsize = heightMap->GetHeightmapSize();
-	camera->AutoUpdateCamera(heightmapsize, dt);
+	
+	// 圆心位置
+	Vector3 center = heightmapsize * Vector3(0.5f, 5.0f, 0.5f);
+
+	// 圆周半径和速度控制参数
+	float radius = 2000.0f;   // 圆周半径，调节大小控制运动范围
+	float speed = -0.1f;      // 速度，控制每秒旋转的角度
+
+	// 使用时间累积角度，使相机在圆周上移动
+	static float angle = 0.0f;
+	angle += speed * dt; // 每帧增加角度
+
+	// 计算圆周运动的位置
+	float x = center.x + radius * cos(angle);
+	float z = center.z + radius * sin(angle);
+	float y = center.y + 5.0f; // 设置高度，或根据需要调整
+
+	// 更新相机位置
+	Vector3 cameraPos(x, y, z);
+	camera->SetPosition(cameraPos);
+
+	// 计算相机朝向圆心的方向
+	Vector3 directionToCenter = (cameraPos - center).Normalised();
+
+	// 设置相机的偏航角 (Yaw) 和俯仰角 (Pitch) 使其朝向圆心
+	float yaw = atan2(directionToCenter.x, directionToCenter.z) * (180.0f / 3.1415926f);
+	float pitch = -asin(directionToCenter.y) * (180.0f / 3.1415926f);
+
+	camera->SetYaw(yaw);
+	camera->SetPitch(-45.0f);
+
+	// 重新计算视图矩阵
 	viewMatrix = camera->BuildViewMatrix();
+
+	// 保持原有的 waterRotate 和 waterCycle 更新
 	waterRotate += dt * 0.5f;
 	waterCycle += dt * 0.15f;
 
+	// 更新动画的时间处理
 	soldierframeTime -= dt;
-	while (soldierframeTime < 0.0f)
-	{
+	while (soldierframeTime < 0.0f) {
 		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
 		soldierframeTime += 1.0f / soldierAnim->GetFrameRate();
 	}
 	soldierNode->SetCurrentFrame(soldiercurrentFrame);
 
-
+	// 更新 rockmovTime
 	rockmovTime += dt * 0.5;
 	Vector3 hSize = heightMap->GetHeightmapSize();
 	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
 		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
 		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
 
+	// 更新场景节点
 	root->Update(dt);
 }
+
 void Renderer::AutoUpdateCamera2(float dt, int SW)
 {
 	Vector3 heightmapsize = heightMap->GetHeightmapSize();

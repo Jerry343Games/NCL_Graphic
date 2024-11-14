@@ -141,6 +141,7 @@
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Data.h" />
     <ClInclude Include="Rain.h" />
     <ClInclude Include="Renderer.h" />
   </ItemGroup>
