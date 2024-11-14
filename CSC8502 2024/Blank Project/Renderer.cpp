@@ -14,9 +14,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
 
-	palmtree = Mesh::LoadFromMeshFile("Palm_Tree.msh");
+	cactus_12 = Mesh::LoadFromMeshFile("Desert_Plant_12_Small_0_1.msh");
 
-	fritree = Mesh::LoadFromMeshFile("Fir_Tree.msh");
+	cactus_09 = Mesh::LoadFromMeshFile("Desert_Plant_09_Small_0_1.msh");
 
 	rock = Mesh::LoadFromMeshFile("Rock.msh");
 
@@ -28,7 +28,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 
 	//load Textures
-	treeTex = SOIL_load_OGL_texture(TEXTUREDIR"tree_diffuse.png",
+	treeTex = SOIL_load_OGL_texture(TEXTUREDIR"Gradients_02_flip.png",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	if (!treeTex)
 	{
@@ -36,14 +36,14 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	earthTex = SOIL_load_OGL_texture(
-		TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+		TEXTUREDIR"Gravel042_1K-JPG_Color.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	if (!earthTex)
 	{
 		return;
 	}
 
 	earthBump = SOIL_load_OGL_texture(
-		TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+		TEXTUREDIR"Dirt_1_Normal.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	if (!earthBump)
 	{
 		return;
@@ -167,7 +167,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	waterShader = new Shader(
-		"reflectVertex.glsl", "reflectFragment.glsl"
+		"waterVertex.glsl", "waterFragment.glsl"
 	);
 	if (!waterShader->LoadSuccess())
 	{
@@ -288,7 +288,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.3f * i, 0.8f, 0.3f * i)));
 		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetMesh(palmtree);
+		s->SetMesh(cactus_12);
 		s->SetTexture(treeTex);
 		s->SetType(TYPE_NORMAL);
 		root->AddChild(s);
@@ -324,7 +324,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.25f * (4 - i), 0.4f, 0.3f * i)));
 		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetMesh(fritree);
+		s->SetMesh(cactus_09);
 		s->SetTexture(treeTex);
 		s->SetType(TYPE_NORMAL);
 		root->AddChild(s);
@@ -527,8 +527,8 @@ Renderer::~Renderer(void) {
 	//delete meshes
 	delete skyboxQuad;
 	delete soldier;
-	delete fritree;
-	delete palmtree;
+	delete cactus_09;
+	delete cactus_12;
 	delete rock;
 	delete sphere;
 
@@ -604,7 +604,9 @@ void Renderer::UpdateScene(float dt) {
 
 	root->Update(dt);
 }
-void Renderer::AutoUpdateCamera(float dt) {
+
+
+void Renderer::OrbitCamera(float dt) {
 
 	// 获取 heightMap 尺寸作为圆心位置的参考
 	Vector3 heightmapsize = heightMap->GetHeightmapSize();
@@ -1061,8 +1063,8 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	Vector3 hSize = heightMap->GetHeightmapSize();
-	modelMatrix = Matrix4::Translation(hSize * 0.5f) *
-		Matrix4::Scale(hSize * 6.0f) *
+	modelMatrix = Matrix4::Translation(Vector3(hSize.x, hSize.y-170.0f, hSize.z)) *
+		Matrix4::Scale(hSize*2) *
 		Matrix4::Rotation(90, Vector3(1, 0, 0));
 	UpdateShaderMatrices();
 

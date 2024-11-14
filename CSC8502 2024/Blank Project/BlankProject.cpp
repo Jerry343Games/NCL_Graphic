@@ -81,7 +81,7 @@ int main() {
 		}
 		else if (CAMERASW == 2)
 		{
-			renderer.AutoUpdateCamera(w.GetTimer()->GetTimeDeltaSeconds());
+			renderer.OrbitCamera(w.GetTimer()->GetTimeDeltaSeconds());
 
 		}
 		else if (CAMERASW == 3)

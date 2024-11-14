@@ -21,7 +21,7 @@ public:
 	void RenderSceneShadow();
 
 	void UpdateScene(float msec)	override;
-	void AutoUpdateCamera(float msc);
+	void OrbitCamera(float msc);
 	void AutoUpdateCamera2(float msc, int SW);
 	void SetDefultCamera(float msc);
 	void SetShaderParticleSize(float f);
@@ -75,8 +75,8 @@ protected:
 	Mesh* cube;
 	Mesh* sphere;
 	Mesh* rocksphere;
-	Mesh* palmtree;
-	Mesh* fritree;
+	Mesh* cactus_12;
+	Mesh* cactus_09;
 	Mesh* soldier;
 	Mesh* rock;
 
