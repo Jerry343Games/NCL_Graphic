@@ -14,7 +14,7 @@ public:
 protected:
 	float variant = 100;
 	float base = 100;
-	float numParticles = 350;
+	float numParticles = 600;
 	vector<Particle> particle_list;
 };
 

@@ -3,7 +3,7 @@
 
 Rain::Rain() {
 	mesh = Mesh::LoadFromMeshFile("Sphere.msh");
-	texture = SOIL_load_OGL_texture(TEXTUREDIR"SnowFlower2.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	texture = SOIL_load_OGL_texture(TEXTUREDIR"raindrop.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	for (int i = 0; i < numParticles; i++) {
 		Particle particle;
@@ -25,7 +25,7 @@ Rain::Rain() {
 
 void Rain::Update(float dt) {
 	for (int i = 0; i < numParticles; i++) {
-		if (children[i]->GetTransform().GetPositionVector().y <= 0) {
+		if (children[i]->GetTransform().GetPositionVector().y <= -2000) {
 			children[i]->SetTransform(Matrix4::Translation(Vector3(rand() % 16384, 8000, rand() % 16384)));
 			float speed = (rand() % 15) + 8;
 			particle_list[i].speed = Vector3(0, -speed, 0);

@@ -36,7 +36,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	earthTex = SOIL_load_OGL_texture(
-		TEXTUREDIR"Gravel042_1K-JPG_Color.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+		TEXTUREDIR"Ground035_1K-JPG_Color.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	if (!earthTex)
 	{
 		return;
@@ -290,19 +290,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
 		s->SetMesh(cactus_12);
 		s->SetTexture(treeTex);
-		s->SetType(TYPE_NORMAL);
-		root->AddChild(s);
-	}
-
-	for (int i = 0; i < 5; ++i)
-	{
-		SceneNode* s = new SceneNode();
-		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.5f));
-		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.2f * i, 0.8f, 0.2f * i)));
-		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetBoundingRadius(100.0f);
-		s->SetMesh(skyboxQuad);
-		s->SetTexture(glassTex);
 		s->SetType(TYPE_NORMAL);
 		root->AddChild(s);
 	}
@@ -608,47 +595,47 @@ void Renderer::UpdateScene(float dt) {
 
 void Renderer::OrbitCamera(float dt) {
 
-	// »ñÈ¡ heightMap ³ß´ç×÷ÎªÔ²ÐÄÎ»ÖÃµÄ²Î¿¼
+	// ï¿½ï¿½È¡ heightMap ï¿½ß´ï¿½ï¿½ï¿½ÎªÔ²ï¿½ï¿½Î»ï¿½ÃµÄ²Î¿ï¿½
 	Vector3 heightmapsize = heightMap->GetHeightmapSize();
 	
-	// Ô²ÐÄÎ»ÖÃ
+	// Ô²ï¿½ï¿½Î»ï¿½ï¿½
 	Vector3 center = heightmapsize * Vector3(0.5f, 5.0f, 0.5f);
 
-	// Ô²ÖÜ°ë¾¶ºÍËÙ¶È¿ØÖÆ²ÎÊý
-	float radius = 2000.0f;   // Ô²ÖÜ°ë¾¶£¬µ÷½Ú´óÐ¡¿ØÖÆÔË¶¯·¶Î§
-	float speed = -0.1f;      // ËÙ¶È£¬¿ØÖÆÃ¿ÃëÐý×ªµÄ½Ç¶È
+	// Ô²ï¿½Ü°ë¾¶ï¿½ï¿½ï¿½Ù¶È¿ï¿½ï¿½Æ²ï¿½ï¿½ï¿½
+	float radius = 2000.0f;   // Ô²ï¿½Ü°ë¾¶ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½Î§
+	float speed = -0.1f;      // ï¿½Ù¶È£ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½×ªï¿½Ä½Ç¶ï¿½
 
-	// Ê¹ÓÃÊ±¼äÀÛ»ý½Ç¶È£¬Ê¹Ïà»úÔÚÔ²ÖÜÉÏÒÆ¶¯
+	// Ê¹ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Û»ï¿½ï¿½Ç¶È£ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 	static float angle = 0.0f;
-	angle += speed * dt; // Ã¿Ö¡Ôö¼Ó½Ç¶È
+	angle += speed * dt; // Ã¿Ö¡ï¿½ï¿½ï¿½Ó½Ç¶ï¿½
 
-	// ¼ÆËãÔ²ÖÜÔË¶¯µÄÎ»ÖÃ
+	// ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 	float x = center.x + radius * cos(angle);
 	float z = center.z + radius * sin(angle);
-	float y = center.y + 5.0f; // ÉèÖÃ¸ß¶È£¬»ò¸ù¾ÝÐèÒªµ÷Õû
+	float y = center.y + 5.0f; // ï¿½ï¿½ï¿½Ã¸ß¶È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 
-	// ¸üÐÂÏà»úÎ»ÖÃ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 	Vector3 cameraPos(x, y, z);
 	camera->SetPosition(cameraPos);
 
-	// ¼ÆËãÏà»ú³¯ÏòÔ²ÐÄµÄ·½Ïò
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ÄµÄ·ï¿½ï¿½ï¿½
 	Vector3 directionToCenter = (cameraPos - center).Normalised();
 
-	// ÉèÖÃÏà»úµÄÆ«º½½Ç (Yaw) ºÍ¸©Ñö½Ç (Pitch) Ê¹Æä³¯ÏòÔ²ÐÄ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ (Yaw) ï¿½Í¸ï¿½ï¿½ï¿½ï¿½ï¿½ (Pitch) Ê¹ï¿½ä³¯ï¿½ï¿½Ô²ï¿½ï¿½
 	float yaw = atan2(directionToCenter.x, directionToCenter.z) * (180.0f / 3.1415926f);
 	float pitch = -asin(directionToCenter.y) * (180.0f / 3.1415926f);
 
 	camera->SetYaw(yaw);
 	camera->SetPitch(-45.0f);
 
-	// ÖØÐÂ¼ÆËãÊÓÍ¼¾ØÕó
+	// ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½
 	viewMatrix = camera->BuildViewMatrix();
 
-	// ±£³ÖÔ­ÓÐµÄ waterRotate ºÍ waterCycle ¸üÐÂ
+	// ï¿½ï¿½ï¿½ï¿½Ô­ï¿½Ðµï¿½ waterRotate ï¿½ï¿½ waterCycle ï¿½ï¿½ï¿½ï¿½
 	waterRotate += dt * 0.5f;
 	waterCycle += dt * 0.15f;
 
-	// ¸üÐÂ¶¯»­µÄÊ±¼ä´¦Àí
+	// ï¿½ï¿½ï¿½Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä´¦ï¿½ï¿½
 	soldierframeTime -= dt;
 	while (soldierframeTime < 0.0f) {
 		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
@@ -656,14 +643,14 @@ void Renderer::OrbitCamera(float dt) {
 	}
 	soldierNode->SetCurrentFrame(soldiercurrentFrame);
 
-	// ¸üÐÂ rockmovTime
+	// ï¿½ï¿½ï¿½ï¿½ rockmovTime
 	rockmovTime += dt * 0.5;
 	Vector3 hSize = heightMap->GetHeightmapSize();
 	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
 		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
 		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
 
-	// ¸üÐÂ³¡¾°½Úµã
+	// ï¿½ï¿½ï¿½Â³ï¿½ï¿½ï¿½ï¿½Úµï¿½
 	root->Update(dt);
 }
 
@@ -1003,43 +990,21 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 {
 	if (SW)
 	{
-		if (shadowSW == false)
-		{
-			BindShader(waterShader);
-			SetShaderLight(*light);
-			Vector3 hSize = heightMap->GetHeightmapSize();
+		BindShader(waterShader);
+		SetShaderLight(*light);
+		Vector3 hSize = heightMap->GetHeightmapSize();
 
-			modelMatrix = Matrix4::Translation(hSize * 0.5f) *
-				Matrix4::Scale(hSize * 6.0f) *
-				Matrix4::Rotation(90, Vector3(1, 0, 0));
+		modelMatrix = Matrix4::Translation(hSize * 0.5f) *
+			Matrix4::Scale(hSize) *
+			Matrix4::Rotation(90, Vector3(1, 0, 0));
 
-			textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) *
-				Matrix4::Scale(Vector3(10, 10, 10)) *
-				Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
+		textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) *
+			Matrix4::Scale(Vector3(5, 5, 5)) *
+			Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 
-			projMatrix = defaultprojMatrix;
-			viewMatrix = camera->BuildViewMatrix();
-			UpdateShaderMatrices();
-		}
-
-		else
-		{
-			BindShader(watershadowShader);
-			SetShaderLight(*light2);
-			Vector3 hSize = heightMap->GetHeightmapSize();
-
-			modelMatrix = Matrix4::Translation(hSize * 0.5f) *
-				Matrix4::Scale(hSize * 6.0f) *
-				Matrix4::Rotation(90, Vector3(1, 0, 0));
-
-			textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) *
-				Matrix4::Scale(Vector3(10, 10, 10)) *
-				Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
-
-			projMatrix = defaultprojMatrix;
-			viewMatrix = camera->BuildViewMatrix();
-			UpdateShaderMatrices();
-		}
+		projMatrix = defaultprojMatrix;
+		viewMatrix = camera->BuildViewMatrix();
+		UpdateShaderMatrices();
 	}
 	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(),
 		"cameraPos"), 1, (float*)&camera->GetPosition());
@@ -1063,8 +1028,8 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	Vector3 hSize = heightMap->GetHeightmapSize();
-	modelMatrix = Matrix4::Translation(Vector3(hSize.x, hSize.y-170.0f, hSize.z)) *
-		Matrix4::Scale(hSize*2) *
+	modelMatrix = Matrix4::Translation(Vector3(hSize.x-2000, hSize.y-200.0f, hSize.z-2000)) *
+		Matrix4::Scale(hSize*0.5) *
 		Matrix4::Rotation(90, Vector3(1, 0, 0));
 	UpdateShaderMatrices();
 
