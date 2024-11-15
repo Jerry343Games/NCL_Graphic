@@ -60,8 +60,8 @@ protected:
 
 
 	SceneNode* root;
+	SceneNode* boneNode;
 	SceneNode* soldierNode;
-
 
 	HeightMap* heightMap;
 	Light* light;
@@ -74,6 +74,7 @@ protected:
 	Mesh* PresentQuad;
 	Mesh* cube;
 	Mesh* sphere;
+	Mesh* bone;
 	Mesh* rocksphere;
 	Mesh* cactus_12;
 	Mesh* cactus_09;
@@ -134,10 +135,9 @@ protected:
 	GLuint nodeTexture;
 	GLuint nodeBumpTexture;
 	GLuint waterTex;
-	GLuint treeTex;
+	GLuint cactusTex;
 	GLuint waterBump;
 	GLuint rockTex;
-	GLuint rockBump;
 	GLuint glassTex;
 	vector<GLuint> soldiermatTextures;
 	vector<GLuint> femalematTextures;

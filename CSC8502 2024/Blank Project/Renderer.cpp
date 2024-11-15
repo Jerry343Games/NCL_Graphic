@@ -18,8 +18,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	cactus_09 = Mesh::LoadFromMeshFile("Desert_Plant_09_Small_0_1.msh");
 
-	rock = Mesh::LoadFromMeshFile("Rock.msh");
-
+	rock = Mesh::LoadFromMeshFile("Rock_Desert_01_Small_0_1.msh");
+	
+	bone =Mesh:: LoadFromMeshFile("bone.msh");
 
 	soldier = Mesh::LoadFromMeshFile("Role_T.msh");
 	soldierAnim = new MeshAnimation("Role_T.anm");
@@ -28,9 +29,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 
 	//load Textures
-	treeTex = SOIL_load_OGL_texture(TEXTUREDIR"Gradients_02_flip.png",
+	cactusTex = SOIL_load_OGL_texture(TEXTUREDIR"Gradients_02_flip.png",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!treeTex)
+	if (!cactusTex)
 	{
 		return;
 	}
@@ -62,13 +63,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	{
 		return;
 	}
-
-	rockTex = SOIL_load_OGL_texture(
-		TEXTUREDIR"Stone_diffuse.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!rockTex)
-	{
-		return;
-	}
+	
 
 	glassTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
@@ -76,13 +71,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	{
 		return;
 	}
-
-	rockBump = SOIL_load_OGL_texture(
-		TEXTUREDIR"Stone_normals.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!rockTex)
-	{
-		return;
-	}
+	
 
 	cubeMap = SOIL_load_OGL_cubemap(
 		TEXTUREDIR"CloudySummerDaySkybox_left.tga", TEXTUREDIR"CloudySummerDaySkybox_right.tga",
@@ -119,9 +108,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(waterBump, true);
 	SetTextureRepeating(earthBump, true);
 	SetTextureRepeating(waterTex, true);
-	SetTextureRepeating(treeTex, true);
+	SetTextureRepeating(cactusTex, true);
 	SetTextureRepeating(rockTex, true);
-	SetTextureRepeating(rockBump, true);
 
 
 
@@ -273,27 +261,63 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 	}
 
-	//create scenegraph
+	//创建 scenegraph
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
 
 	root = new SceneNode();
-
 	rain = new Rain();
-
 	root->AddChild(rain);
 
-	for (int i = 1; i < 4; ++i)
+	srand(static_cast<unsigned>(time(nullptr)));
+
+	// 随机生成每种模型的数量在 5 到 8 之间
+	int numCactus12 = 5 + rand() % 4;
+	int numCactus09 = 5 + rand() % 4; 
+	int numRock = 5 + rand() % 4;     
+
+	// 将三种模型的数量合并为一个总数
+	int totalModels = numCactus12 + numCactus09 + numRock;
+
+	for (int i = 0; i < totalModels; ++i) 
 	{
 		SceneNode* s = new SceneNode();
 		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.3f * i, 0.8f, 0.3f * i)));
+
+		// 在 x 和 z 轴的 0 到 1 之间随机生成浮点数
+		float randomX = static_cast<float>(rand()) / RAND_MAX;
+		float randomZ = static_cast<float>(rand()) / RAND_MAX;
+    
+		// 根据当前循环计数选择模型类型和位置
+		if (i < numCactus12) {
+			s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(randomX, 0.3f, randomZ)));
+			s->SetMesh(cactus_12);
+			s->SetTexture(cactusTex);
+		}
+		else if (i < numCactus12 + numCactus09) {
+			s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(randomX, 0.5f, randomZ)));
+			s->SetMesh(cactus_09);
+			s->SetTexture(cactusTex);
+		}
+		else {
+			s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(randomX, 0.5f, randomZ)));
+			s->SetMesh(rock);
+			s->SetTexture(cactusTex);
+		}
+
 		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetMesh(cactus_12);
-		s->SetTexture(treeTex);
 		s->SetType(TYPE_NORMAL);
 		root->AddChild(s);
 	}
 
+	SceneNode* boneNode = new SceneNode();
+	boneNode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	boneNode->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.5f, 0.5f, 0.5f))); // 场景中央
+	boneNode->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
+	boneNode->SetMesh(bone); // 使用 bone 模型
+	boneNode->SetTexture(cactusTex); // 假设 bone 使用 cactusTex 作为纹理
+	boneNode->SetType(TYPE_NORMAL);
+	root->AddChild(boneNode);
+	
 	soldierNode = new SceneNode();
 	soldierNode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	soldierNode->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.7f, 0.3f, 0.8f)));
@@ -303,33 +327,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	soldierNode->SetAnimation(soldierAnim);
 	soldierNode->SetType(TYPE_ANIMATION);
 	root->AddChild(soldierNode);
-
-
-	for (int i = 1; i < 4; ++i)
-	{
-		SceneNode* s = new SceneNode();
-		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.25f * (4 - i), 0.4f, 0.3f * i)));
-		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetMesh(cactus_09);
-		s->SetTexture(treeTex);
-		s->SetType(TYPE_NORMAL);
-		root->AddChild(s);
-	}
-
-	for (int i = 1; i < 3; ++i)
-	{
-		SceneNode* s = new SceneNode();
-		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.15f * (3 - i), 0.6f, 0.15f * i)) *
-			Matrix4::Rotation(50.0f * i, Vector3(0, 1, 0)));
-		s->SetModelScale(Vector3(5.0f, 5.0f, 5.0f));
-		s->SetMesh(rock);
-		s->SetTexture(rockTex);
-		s->SetBumpTexture(rockBump);
-		s->SetType(TYPE_BUMP);
-		root->AddChild(s);
-	}
+	
 
 	//create camera and light
 	camera = new Camera(-15.0f, 50.0f,
@@ -626,7 +624,7 @@ void Renderer::OrbitCamera(float dt) {
 	float pitch = -asin(directionToCenter.y) * (180.0f / 3.1415926f);
 
 	camera->SetYaw(yaw);
-	camera->SetPitch(-45.0f);
+	camera->SetPitch(-35.0f);
 
 	// ���¼�����ͼ����
 	viewMatrix = camera->BuildViewMatrix();
@@ -848,31 +846,6 @@ void Renderer::DrawNode(Camera* camera, SceneNode* n, bool SW, bool shadowSW)
 				glBindTexture(GL_TEXTURE_2D, n->GetTextures()[i]);
 				n->GetMesh()->DrawSubMesh(i);
 			}
-		}
-		else if (n->GetBumpTexture() == rockBump)
-		{
-			UpdateShaderMatrices();
-
-
-
-			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-			glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
-			glUniform4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-			glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-			nodeTexture = n->GetTexture();
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, nodeTexture);
-
-			nodeBumpTexture = n->GetBumpTexture();
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "bumpTex"), 1);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, nodeBumpTexture);
-
-
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
-			n->Draw(*this);
 		}
 		else
 		{
@@ -1409,7 +1382,6 @@ void Renderer::DrawCombinedScene()
 	glBindTexture(GL_TEXTURE_2D, rockTex);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockBump);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
