@@ -69,7 +69,7 @@ Renderer::~Renderer(void)	{
 	delete zxShader;
 }
 
-void Renderer::RenderScene() {
+void Renderer::RenderSceneDaylight() {
 	glUseProgram(zxShader->GetProgram());
 
 	const GLuint uboSlot	= 0;

@@ -29,6 +29,24 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 
 	//load Textures
+	cubeMapSunset = SOIL_load_OGL_cubemap(
+	TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg",
+	TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg",
+	TEXTUREDIR"rusted_south.jpg", TEXTUREDIR"rusted_north.jpg",
+	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+
+	cubeMapNight = SOIL_load_OGL_cubemap(
+	TEXTUREDIR"vz_gray_left.png", TEXTUREDIR"vz_gray_left.png",
+	TEXTUREDIR"vz_gray_up.png", TEXTUREDIR"vz_gray_down.png",
+	TEXTUREDIR"vz_gray_left.png", TEXTUREDIR"vz_gray_left.png",
+			SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	if (!cubeMapNight||!cubeMapSunset)
+	{
+		return;
+	}
+	//default
+	currentSkybox=cubeMapSunset;
+	
 	cactusTex = SOIL_load_OGL_texture(TEXTUREDIR"Gradients_02_flip.png",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	if (!cactusTex)
@@ -68,17 +86,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glassTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
 	if (!glassTex)
-	{
-		return;
-	}
-	
-
-	cubeMap = SOIL_load_OGL_cubemap(
-		TEXTUREDIR"CloudySummerDaySkybox_left.tga", TEXTUREDIR"CloudySummerDaySkybox_right.tga",
-		TEXTUREDIR"CloudySummerDaySkybox_up.tga", TEXTUREDIR"CloudySummerDaySkybox_down.tga",
-		TEXTUREDIR"CloudySummerDaySkybox_front.tga", TEXTUREDIR"CloudySummerDaySkybox_back.tga",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-	if (!cubeMap)
 	{
 		return;
 	}
@@ -275,7 +282,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	int numCactus09 = 5 + rand() % 4; 
 	int numRock = 5 + rand() % 4;     
 
-	// 将三种模型的数量合并为一个总数
+	// 合并为一个总数
 	int totalModels = numCactus12 + numCactus09 + numRock;
 
 	for (int i = 0; i < totalModels; ++i) 
@@ -330,29 +337,22 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	
 
 	//create camera and light
-	camera = new Camera(-15.0f, 50.0f,
-		heightmapSize * Vector3(1.3f, 3.0f, 1.3f));
-	skycamera = new Camera(-90.0f, 0.0f,
-		heightmapSize * Vector3(0.5f, 10.0f, 0.5f));
-	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 1.0f),
-		Vector4(1, 1, 1, 1), heightmapSize.x);
-	light2 = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f),
-		Vector4(1, 1, 1, 1), 10000.0f);
-	pointLights = new Light[40];
+	camera = new Camera(-15.0f, 50.0f,heightmapSize * Vector3(1.3f, 3.0f, 1.3f));
+	generalCamera = new Camera(-90.0f, 0.0f,heightmapSize * Vector3(0.5f, 10.0f, 0.5f));
+	
+	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 1.0f),Vector4(1, 1, 1, 1), heightmapSize.x);
+	light2 = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f),Vector4(1, 1, 1, 1), 10000.0f);
+	pointLights = new Light[5];
 
-	for (int i = 0; i < 40; ++i)
+	for (int i = 0; i < 5; ++i) 
 	{
 		Light& l = pointLights[i];
-		l.SetPosition(Vector3(rand() % (int)heightmapSize.x, 150.0f, rand() % (int)heightmapSize.z));
+		l.SetPosition(Vector3(rand() % (int)heightmapSize.x, 400.0f, rand() % (int)heightmapSize.z));
+		
+		l.SetColour(Vector4(1.0f, 1.0f, 0.8f, 1.0f));
 
-		l.SetColour(Vector4(0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			0.5f + (float)(rand() / (float)RAND_MAX),
-			1));
-
-		l.SetRadius(250.0f + (rand() % 250));
+		l.SetRadius(1000.0f + (rand() % 250));
 	}
-
 
 	//set up projMatrix
 	defaultprojMatrix = Matrix4::Perspective(1.0f, 15000.0f,
@@ -463,6 +463,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 	//light FBO 
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -475,6 +476,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		return;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 	//shadow FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTex, 0);
@@ -568,6 +570,8 @@ Renderer::~Renderer(void) {
 
 //camera part
 void Renderer::UpdateScene(float dt) {
+	
+	
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
 	waterRotate += dt * 0.5f;
@@ -647,65 +651,9 @@ void Renderer::OrbitCamera(float dt) {
 	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
 		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
 		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
-
-	// ���³����ڵ�
+	
 	root->Update(dt);
 }
-
-void Renderer::AutoUpdateCamera2(float dt, int SW)
-{
-	Vector3 heightmapsize = heightMap->GetHeightmapSize();
-	camera->AutoUpdateCamera2(heightmapsize, SW, dt);
-	viewMatrix = camera->BuildViewMatrix();
-	waterRotate += dt * 0.5f;
-	waterCycle += dt * 0.15f;
-
-	soldierframeTime -= dt;
-	while (soldierframeTime < 0.0f)
-	{
-		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
-		soldierframeTime += 1.0f / soldierAnim->GetFrameRate();
-	}
-	soldierNode->SetCurrentFrame(soldiercurrentFrame);
-
-	rockmovTime += dt * 0.5;
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
-		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
-
-	root->Update(dt);
-}
-void Renderer::SetDefultCamera(float dt)
-{
-	Vector3 heightmapsize = heightMap->GetHeightmapSize();
-	camera->SetPosition(heightmapsize * Vector3(1.3f, 3.0f, 1.3f));
-	camera->SetPitch(-15.0f);
-	camera->SetYaw(50.0f);
-	viewMatrix = camera->BuildViewMatrix();
-	waterRotate += dt * 0.5f;
-	waterCycle += dt * 0.15f;
-
-	soldierframeTime -= dt;
-	while (soldierframeTime < 0.0f)
-	{
-		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
-		soldierframeTime += 1.0f / soldierAnim->GetFrameRate();
-	}
-	soldierNode->SetCurrentFrame(soldiercurrentFrame);
-
-	rockmovTime += dt * 0.5;
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
-		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
-
-	root->Update(dt);
-}
-
-
-
-
 
 //scenegraph part
 void Renderer::BuildNodeLists(SceneNode* from)
@@ -877,7 +825,7 @@ void Renderer::DrawNode(Camera* camera, SceneNode* n, bool SW, bool shadowSW)
 
 
 //Sky,water,island part
-void Renderer::DrawSkybox()
+void Renderer::DrawSkybox(GLuint skybox)
 {
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glDepthMask(GL_FALSE);
@@ -888,6 +836,11 @@ void Renderer::DrawSkybox()
 	modelMatrix.ToIdentity();
 
 	UpdateShaderMatrices();
+	
+	// 使用当前天空盒
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+	glUniform1i(glGetUniformLocation(skyboxShader->GetProgram(), "cubeTex"), 0);
 
 	skyboxQuad->Draw();
 
@@ -998,7 +951,7 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 	glBindTexture(GL_TEXTURE_2D, waterTex);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapSunset);
 
 	Vector3 hSize = heightMap->GetHeightmapSize();
 	modelMatrix = Matrix4::Translation(Vector3(hSize.x-2000, hSize.y-200.0f, hSize.z-2000)) *
@@ -1014,9 +967,10 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 
 
 
-//different scenes renderer
-void Renderer::RenderScene()
+//switch Scene
+void Renderer::RenderSceneDaylight()
 {
+	currentSkybox=cubeMapSunset;
 	BuildNodeLists(root);
 	SortNodeLists();
 
@@ -1027,22 +981,22 @@ void Renderer::RenderScene()
 	viewMatrix = camera->BuildViewMatrix();
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
 		(float)width / (float)height, 45.0f);
-	DrawSkybox();
+	DrawSkybox(currentSkybox);
 	DrawHeightmap(camera, true, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
-	//DrawEmitter();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(skycamera, true, false);
-	DrawNodes(skycamera, true, false);
-	DrawWater(skycamera, true, false);
+	DrawHeightmap(generalCamera, true, false);
+	DrawNodes(generalCamera, true, false);
 
 	ClearNodeLists();
 }
+
 void Renderer::RenderSceneNight()
 {
+	currentSkybox=cubeMapNight;
 	BuildNodeLists(root);
 	SortNodeLists();
 
@@ -1056,9 +1010,8 @@ void Renderer::RenderSceneNight()
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(skycamera, true, false);
-	DrawNodes(skycamera, true, false);
-	DrawWater(skycamera, true, false);
+	DrawHeightmap(generalCamera, true, false);
+	DrawNodes(generalCamera, true, false);
 
 	ClearNodeLists();
 }
@@ -1076,36 +1029,12 @@ void Renderer::RenderSceneBlur()
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(skycamera, true, false);
-	DrawNodes(skycamera, true, false);
-	DrawWater(skycamera, true, false);
+	DrawHeightmap(generalCamera, true, false);
+	DrawNodes(generalCamera, true, false);
+	DrawWater(generalCamera, true, false);
 
 	ClearNodeLists();
 }
-void Renderer::RenderSceneShadow()
-{
-	BuildNodeLists(root);
-	SortNodeLists();
-
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, width, height);
-	DrawSkybox();
-	DrawShadowMapping();
-	DrawCombinedScene();
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(skycamera, true, false);
-	DrawNodes(skycamera, true, false);
-	DrawWater(skycamera, true, false);
-
-	ClearNodeLists();
-}
-
-
-
-
 
 //post processing rendering
 void Renderer::DrawBlurScene()
@@ -1113,7 +1042,7 @@ void Renderer::DrawBlurScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	DrawSkybox();
+	DrawSkybox(currentSkybox);
 	DrawHeightmap(camera, true, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
@@ -1183,14 +1112,16 @@ void Renderer::DrawScene()
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
 		(float)width / (float)height, 45.0f);
 
-	DrawSkybox();
+	DrawSkybox(currentSkybox);
 	DrawHeightmapNoLight();
 	DrawNodes(camera, true, false);
-	DrawWater(camera, true, false);
-
-
+	if (currentSkybox==cubeMapSunset)
+	{
+		DrawWater(camera, true, false);
+	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
 void Renderer::DrawPointLights()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);

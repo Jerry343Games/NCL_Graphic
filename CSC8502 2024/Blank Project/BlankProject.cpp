@@ -45,22 +45,6 @@ int main() {
 		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_2)) {
 			CAMERASW = 2;
 		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_3)) {
-			CAMERASW = 3;
-		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_4)) {
-			CAMERASW = 4;
-		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_5)) {
-			CAMERASW = 5;
-		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_6)) {
-			CAMERASW = 6;
-		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_7)) {
-			CAMERASW = 7;
-		}
-
 		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_Z)) {
 			SCENESW = 1;
 		}
@@ -69,9 +53,6 @@ int main() {
 		}
 		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_C)) {
 			SCENESW = 3;
-		}
-		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_V)) {
-			SCENESW = 4;
 		}
 
 		//camera settings
@@ -84,21 +65,11 @@ int main() {
 			renderer.OrbitCamera(w.GetTimer()->GetTimeDeltaSeconds());
 
 		}
-		else if (CAMERASW == 3)
-		{
-			renderer.SetDefultCamera(w.GetTimer()->GetTimeDeltaSeconds());
-
-		}
-		else if (CAMERASW == 4 || CAMERASW == 5 || CAMERASW == 6 || CAMERASW == 7)
-		{
-			renderer.AutoUpdateCamera2(w.GetTimer()->GetTimeDeltaSeconds(), CAMERASW);
-
-		}
 
 		//scenesettings
 		if (SCENESW == 1)
 		{
-			renderer.RenderScene();
+			renderer.RenderSceneDaylight();
 			renderer.SwapBuffers();
 			if (Window::GetKeyboard()->KeyDown(KEYBOARD_F5)) {
 				Shader::ReloadAllShaders();
@@ -115,14 +86,6 @@ int main() {
 		else if (SCENESW == 3)
 		{
 			renderer.RenderSceneBlur();
-			renderer.SwapBuffers();
-			if (Window::GetKeyboard()->KeyDown(KEYBOARD_F5)) {
-				Shader::ReloadAllShaders();
-			}
-		}
-		else if (SCENESW == 4)
-		{
-			renderer.RenderSceneShadow();
 			renderer.SwapBuffers();
 			if (Window::GetKeyboard()->KeyDown(KEYBOARD_F5)) {
 				Shader::ReloadAllShaders();

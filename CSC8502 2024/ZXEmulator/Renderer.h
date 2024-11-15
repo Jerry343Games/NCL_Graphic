@@ -5,7 +5,7 @@ class Renderer : public OGLRenderer	{
 public:
 	Renderer(Window &parent);
 	 ~Renderer(void);
-	 void RenderScene()				override;
+	 void RenderSceneDaylight()				override;
 	 void UpdateScene(float msec)	override;
 
 	 void ClearPixels();

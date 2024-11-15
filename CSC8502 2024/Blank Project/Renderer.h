@@ -15,15 +15,12 @@ public:
 	~Renderer(void);
 
 	//different scenes switcher
-	void RenderScene()				override;
+	void RenderSceneDaylight()				override;
 	void RenderSceneNight();
 	void RenderSceneBlur();
-	void RenderSceneShadow();
 
 	void UpdateScene(float msec)	override;
 	void OrbitCamera(float msc);
-	void AutoUpdateCamera2(float msc, int SW);
-	void SetDefultCamera(float msc);
 	void SetShaderParticleSize(float f);
 protected:
 	//scenegraph functions
@@ -34,7 +31,7 @@ protected:
 	void DrawNode(Camera* camera, SceneNode* n, bool SW, bool shadowSW);
 
 	//skybox,heightmap,water functions
-	void DrawSkybox();
+	void DrawSkybox(GLuint skybox);
 	void DrawHeightmap(Camera* camera, bool SW, bool shadowSW);
 	void DrawWater(Camera* camera, bool SW, bool shadowSW);
 	void DrawHeightmapNoLight();
@@ -67,8 +64,8 @@ protected:
 	Light* light;
 	Light* light2;
 	Light* pointLights;
+	Camera* generalCamera;
 	Camera* camera;
-	Camera* skycamera;
 
 	Mesh* skyboxQuad;
 	Mesh* PresentQuad;
@@ -83,9 +80,6 @@ protected:
 
 	MeshAnimation* soldierAnim;
 	MeshMaterial* soldierMat;
-	MeshAnimation* femaleAnim;
-	MeshMaterial* femaleMat;
-
 
 	Shader* skyboxShader;
 	Shader* scenegraphShader;
@@ -129,7 +123,9 @@ protected:
 
 
 	//textures
-	GLuint cubeMap;
+	GLuint currentSkybox;
+	GLuint cubeMapSunset;
+	GLuint cubeMapNight;
 	GLuint earthBump;
 	GLuint earthTex;
 	GLuint nodeTexture;
