@@ -243,7 +243,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 #pragma endregion
 
-#pragma region Creat camera and light
+#pragma region Creat camera and generate random light
 
 	//create camera and light
 	camera = new Camera(-15.0f, 50.0f,heightmapSize * Vector3(1.3f, 3.0f, 1.3f));
@@ -268,142 +268,83 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	projMatrix = defaultprojMatrix;
 #pragma endregion
 
+	InitializeFramebuffers();
 
 	//water
 	flowRotate = 0.0f;
 	flowSpeed = 0.0f;
 	
-	//animation properties
+	//animation
 	soldiercurrentFrame = 0;
 	soldierframeTime = 0.0f;
-	
-	//generate FBOs
-	glGenFramebuffers(1, &bufferFBO);
-	glGenFramebuffers(1, &processFBO);
-	glGenFramebuffers(1, &shadowFBO);
-	glGenFramebuffers(1, &pointLightFBO);
-	glGenFramebuffers(1, &blurbufferFBO);
-
-	//generate color attachment
-	GLenum buffers[2] = {
-	GL_COLOR_ATTACHMENT0,
-	GL_COLOR_ATTACHMENT1
-	};
-
-	GenerateScreenTexture(bufferDepthTex, true);
-	if (!bufferDepthTex)
-	{
-		return;
-	}
-	for (int i = 0; i < 2; ++i)
-	{
-		GenerateScreenTexture(bufferColourTex[i]);
-		if (!bufferColourTex[i])
-		{
-			return;
-		}
-	}
-	GenerateScreenTexture(bufferNormalTex);
-	if (!bufferNormalTex)
-	{
-		return;
-	}
-	GenerateScreenTexture(lightDiffuseTex);
-	if (!lightDiffuseTex)
-	{
-		return;
-	}
-	GenerateScreenTexture(lightSpecularTex);
-	if (!lightSpecularTex)
-	{
-		return;
-	}
-	//generate shadowTex
-	glGenTextures(1, &shadowTex);
-	glBindTexture(GL_TEXTURE_2D, shadowTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWSIZE, SHADOWSIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	if (!shadowTex)
-	{
-		return;
-	}
-	//generate our blur depth texure
-	glGenTextures(1, &blurbufferDepthTex);
-	glBindTexture(GL_TEXTURE_2D, blurbufferDepthTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height,
-		0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-	//generate blur colour texture
-	for (int i = 0; i < 2; ++i)
-	{
-		glGenTextures(1, &blurbufferColourTex[i]);
-		glBindTexture(GL_TEXTURE_2D, blurbufferColourTex[i]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-			GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	}
-
-
-	//bind FBO's attachments
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-		GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, bufferColourTex[0], 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
-		GL_TEXTURE_2D, bufferNormalTex, 0);
-	glDrawBuffers(2, buffers);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-		GL_FRAMEBUFFER_COMPLETE)
-	{
-		return;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	//FBO light 
-	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, lightDiffuseTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
-		GL_TEXTURE_2D, lightSpecularTex, 0);
-	glDrawBuffers(2, buffers);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		return;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	//FBO blue
-	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-		GL_TEXTURE_2D, blurbufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-		GL_TEXTURE_2D, blurbufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, blurbufferColourTex[0], 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-		GL_FRAMEBUFFER_COMPLETE)
-	{
-		return;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//enable functions
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	init = true;
 }
+
+#pragma region Initialize FBO and Texture buffer
+void Renderer::GenerateFramebuffer(GLuint& fbo, GLuint depthTex, GLuint* colorTex, int colorCount) {
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    if (depthTex) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+    }
+
+    GLenum* buffers = new GLenum[colorCount];
+    for (int i = 0; i < colorCount; ++i) {
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorTex[i], 0);
+        buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    }
+    glDrawBuffers(colorCount, buffers);
+    delete[] buffers;
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Framebuffer creation failed!" << std::endl;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        return;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::InitializeFramebuffers() {
+    GenerateScreenTexture(bufferDepthTex, true);
+    for (int i = 0; i < 2; ++i) {
+        GenerateScreenTexture(bufferColourTex[i]);
+    }
+    GenerateScreenTexture(bufferNormalTex);
+    GenerateScreenTexture(lightDiffuseTex);
+    GenerateScreenTexture(lightSpecularTex);
+
+    GenerateFramebuffer(bufferFBO, bufferDepthTex, bufferColourTex, 2);
+    GenerateFramebuffer(pointLightFBO, 0, &lightDiffuseTex, 2);
+
+    glGenTextures(1, &shadowTex);
+    glBindTexture(GL_TEXTURE_2D, shadowTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWSIZE, SHADOWSIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenTextures(1, &blurbufferDepthTex);
+    glBindTexture(GL_TEXTURE_2D, blurbufferDepthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    for (int i = 0; i < 2; ++i) {
+        glGenTextures(1, &blurbufferColourTex[i]);
+        glBindTexture(GL_TEXTURE_2D, blurbufferColourTex[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    GenerateFramebuffer(blurbufferFBO, blurbufferDepthTex, blurbufferColourTex, 1);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    init = true;
+}
+#pragma endregion
+
+#pragma region Destructor
+
 Renderer::~Renderer(void) {
 	//delete meshes
 	delete skyboxQuad;
@@ -433,13 +374,6 @@ Renderer::~Renderer(void) {
 	delete soldiershadowShader;
 	delete animationshadowShader;
 
-	//delete others
-	delete camera;
-	delete light;
-	delete root;
-	delete[] pointLights;
-
-
 	//delete FBOs and attachments
 	glDeleteTextures(2, bufferColourTex);
 	glDeleteTextures(2, blurbufferColourTex);
@@ -455,23 +389,23 @@ Renderer::~Renderer(void) {
 	glDeleteFramebuffers(1, &pointLightFBO);
 	glDeleteFramebuffers(1, &blurbufferFBO);
 	glDeleteFramebuffers(1, &shadowFBO);
+	
+	//delete others
+	delete camera;
+	delete light;
+	delete root;
+	delete[] pointLights;
 }
 
+#pragma endregion
 
-
-
-
-//camera part
+#pragma region Orbit camera
 void Renderer::UpdateScene(float dt) {
 	
 	
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
 	
-	flowRotate += dt * 0.5f;
-	flowSpeed += dt * 0.15f;
-
-	soldierframeTime -= dt;
 	while (soldierframeTime < 0.0f)
 	{
 		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
@@ -481,7 +415,11 @@ void Renderer::UpdateScene(float dt) {
 	
 	Vector3 hSize = heightMap->GetHeightmapSize();
 
+	flowRotate += dt * 0.15f;
+	flowSpeed += dt * 0.15f;
 
+	soldierframeTime -= dt;
+	
 	root->Update(dt);
 }
 
@@ -532,9 +470,10 @@ void Renderer::OrbitCamera(float dt) {
 	
 	root->Update(dt);
 }
-
+#pragma endregion
 
 #pragma region Scene Graph
+
 void Renderer::BuildNodeLists(SceneNode* from) {
     Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
     from->SetCameraDistance(Vector3::Dot(dir, dir));
@@ -665,10 +604,11 @@ void Renderer::DrawSkybox(GLuint skybox)
 	glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glDepthMask(GL_TRUE);
 }
-void Renderer::DrawHeightmap(Camera* camera, bool SW, bool shadowSW)
+
+
+void Renderer::DrawHeightmap(Camera* camera, bool shadowSW)
 {
-	if (SW)
-	{
+
 		if (shadowSW == false)
 		{
 			BindShader(lightShader);
@@ -688,7 +628,7 @@ void Renderer::DrawHeightmap(Camera* camera, bool SW, bool shadowSW)
 			viewMatrix = camera->BuildViewMatrix();
 			projMatrix = defaultprojMatrix;
 		}
-	}
+	
 	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
 	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
@@ -705,7 +645,7 @@ void Renderer::DrawHeightmap(Camera* camera, bool SW, bool shadowSW)
 
 	heightMap->Draw();
 }
-void Renderer::DrawHeightmapNoLight()
+void Renderer::DrawHeightmapNight()
 {
 	BindShader(heightmapNolightShader);
 
@@ -745,14 +685,13 @@ void Renderer::RenderSceneDaylight()
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
 		(float)width / (float)height, 45.0f);
 	DrawSkybox(currentSkybox);
-	DrawHeightmap(camera, true, false);
+	DrawHeightmap(camera, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
-	//DrawShadow();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, true, false);
+	DrawHeightmap(generalCamera, false);
 	DrawNodes(generalCamera, true, false);
 
 	ClearNodeLists();
@@ -774,7 +713,7 @@ void Renderer::RenderSceneNight()
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, true, false);
+	DrawHeightmap(generalCamera, false);
 	DrawNodes(generalCamera, true, false);
 
 	ClearNodeLists();
@@ -844,7 +783,7 @@ void Renderer::RenderSceneBlur()
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, true, false);
+	DrawHeightmap(generalCamera, false);
 	DrawNodes(generalCamera, true, false);
 	DrawWater(generalCamera, true, false);
 
@@ -858,7 +797,7 @@ void Renderer::DrawBlurScene()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	DrawSkybox(currentSkybox);
-	DrawHeightmap(camera, true, false);
+	DrawHeightmap(camera, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
 	
@@ -914,7 +853,6 @@ void Renderer::PresentScene()
 
 
 
-
 //deferred rendering
 void Renderer::DrawScene()
 {
@@ -924,7 +862,7 @@ void Renderer::DrawScene()
 		(float)width / (float)height, 45.0f);
 
 	DrawSkybox(currentSkybox);
-	DrawHeightmapNoLight();
+	DrawHeightmapNight();
 	DrawNodes(camera, true, false);
 	if (currentSkybox==cubeMapSunset)
 	{

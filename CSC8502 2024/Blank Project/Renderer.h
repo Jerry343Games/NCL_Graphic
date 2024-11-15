@@ -29,26 +29,17 @@ protected:
     void ClearNodeLists();
     void DrawNodes(Camera* camera, bool SW, bool shadowSW);
     void DrawNode(Camera* camera, SceneNode* n, bool shadowSW);
-
-    //refactored helper functions
-    void CalculateNodeCameraDistance(SceneNode* node);
-    void AddNodeToAppropriateList(SceneNode* node);
-    void SortTransparentNodes();
-    void SortOpaqueNodes();
-
-    void SetupShader(Camera* camera, SceneNode* node, bool shadowSW);
-    void BindAndSetupShadowShader(Shader* shader);
-    void BindAndSetupSceneShader(Shader* shader);
-
+    
     void DrawSoldierNode(Camera* camera, SceneNode* node);
-    void UploadJointMatrices(SceneNode* node);
     void DrawDefaultNode(Camera* camera, SceneNode* node);
 
     //skybox,heightmap,water functions
+    void InitializeFramebuffers();
+    void GenerateFramebuffer(GLuint& fbo, GLuint depthTex, GLuint* colorTex, int colorCount);
     void DrawSkybox(GLuint skybox);
-    void DrawHeightmap(Camera* camera, bool SW, bool shadowSW);
+    void DrawHeightmap(Camera* camera, bool shadowSW);
     void DrawWater(Camera* camera, bool SW, bool shadowSW);
-    void DrawHeightmapNoLight();
+    void DrawHeightmapNight();
 
     //post processing
     void DrawBlurScene();
@@ -144,11 +135,11 @@ protected:
     vector<SceneNode*> transparentNodeList;
     vector<SceneNode*> nodeList;
 
-    //water properties
+    //water
     float flowRotate;
     float flowSpeed;
 
-    //animation properties
+    //animation
     int soldiercurrentFrame;
     float soldierframeTime;
 
