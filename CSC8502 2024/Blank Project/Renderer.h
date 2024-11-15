@@ -33,24 +33,36 @@ protected:
     void DrawSoldierNode(Camera* camera, SceneNode* node);
     void DrawDefaultNode(Camera* camera, SceneNode* node);
 
-    //skybox,heightmap,water functions
+    //skybox,heightmap,water
+    void DrawSkybox(GLuint skybox);
     void InitializeFramebuffers();
     void GenerateFramebuffer(GLuint& fbo, GLuint depthTex, GLuint* colorTex, int colorCount);
-    void DrawSkybox(GLuint skybox);
-    void DrawHeightmap(Camera* camera, bool shadowSW);
-    void DrawWater(Camera* camera, bool SW, bool shadowSW);
-    void DrawHeightmapNight();
+    void DrawHeightmapDaylight(Camera* camera, bool shadowSW);
+    void DrawWater(Camera* camera, bool shadowSW);
+    void RenderMiniMap();
+    void PrepareScene();
+    void DrawHeightmapNight(Camera* camera);
+    void DrawHeightmap(Camera* camera, Shader* shader, bool shadowSW);
+    void SetCubeMap(GLuint cubeMap, int textureUnit, const std::string& name);
+    void SetTexture(GLuint texture, int textureUnit, const std::string& name);
+    void BindAndSetShader(Shader* shader, Camera* camera, bool shadowSW);
 
     //post processing
+    void ClearBuffers(const Vector4& color);
+    void SetupFramebuffer(GLuint framebuffer, GLuint texture);
+    void DrawQuadWithShader(Shader* shader, GLuint texture, const std::string& uniformName);
     void DrawBlurScene();
-    void DrawPostProcess();
-    void PresentScene();
+    void PostProcessBlur();
 
     //deferred shading
     void DrawScene();
     void DrawPointLights();
     void CombineBuffers();
     void GenerateScreenTexture(GLuint& into, bool depth = false);
+    void PreparePointLightFramebuffer();
+    void SetPointLightShaderUniforms();
+    void DrawAllPointLights();
+    void RestoreDefaultRenderState();
 
     SceneNode* root;
     SceneNode* boneNode;

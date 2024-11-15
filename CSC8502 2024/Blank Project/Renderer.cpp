@@ -6,7 +6,6 @@ const int POST_PASSES = 10;
 #define SHADOWSIZE 2048
 
 
-//initaiise and destructor part
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 #pragma region Load Mesh and Ani
@@ -580,8 +579,6 @@ void Renderer::DrawDefaultNode(Camera* camera, SceneNode* node) {
 
 #pragma endregion
 
-
-//Sky,water,terrain
 void Renderer::DrawSkybox(GLuint skybox)
 {
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -594,7 +591,7 @@ void Renderer::DrawSkybox(GLuint skybox)
 
 	UpdateShaderMatrices();
 	
-	// 使用当前天空盒
+	//use current skybox
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
 	glUniform1i(glGetUniformLocation(skyboxShader->GetProgram(), "cubeTex"), 0);
@@ -605,124 +602,101 @@ void Renderer::DrawSkybox(GLuint skybox)
 	glDepthMask(GL_TRUE);
 }
 
-
-void Renderer::DrawHeightmap(Camera* camera, bool shadowSW)
-{
-
-		if (shadowSW == false)
-		{
-			BindShader(lightShader);
-			SetShaderLight(*light);
-			modelMatrix.ToIdentity();
-			textureMatrix.ToIdentity();
-			viewMatrix = camera->BuildViewMatrix();
-			projMatrix = defaultprojMatrix;
-			UpdateShaderMatrices();
-		}
-		else
-		{
-			BindShader(heightmapshadowShader);
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, shadowTex);
-			viewMatrix = camera->BuildViewMatrix();
-			projMatrix = defaultprojMatrix;
-		}
-	
-	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, earthTex);
-
-	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "bumpTex"), 1);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, earthBump);
-
-	modelMatrix.ToIdentity();
-	UpdateShaderMatrices();
-
-
-	heightMap->Draw();
-}
-void Renderer::DrawHeightmapNight()
-{
-	BindShader(heightmapNolightShader);
-
-	glUniform1i(glGetUniformLocation(heightmapNolightShader->GetProgram(),
-		"diffuseTex"), 0);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, earthTex);
-
-	glUniform1i(glGetUniformLocation(heightmapNolightShader->GetProgram(),
-		"bumpTex"), 1);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, earthBump);
-
-	modelMatrix.ToIdentity();
-	textureMatrix.ToIdentity();
+#pragma region Draw Terrain with heightmap
+void Renderer::BindAndSetShader(Shader* shader, Camera* camera, bool shadowSW) {
+	BindShader(shader);
+	if (!shadowSW) {
+		SetShaderLight(*light);
+	}
 	viewMatrix = camera->BuildViewMatrix();
 	projMatrix = defaultprojMatrix;
-
 	UpdateShaderMatrices();
+}
 
+void Renderer::SetTexture(GLuint texture, int textureUnit, const std::string& name) {
+	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), name.c_str()), textureUnit);
+	glActiveTexture(GL_TEXTURE0 + textureUnit);
+	glBindTexture(GL_TEXTURE_2D, texture);
+}
+
+void Renderer::SetCubeMap(GLuint cubeMap, int textureUnit, const std::string& name) {
+	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), name.c_str()), textureUnit);
+	glActiveTexture(GL_TEXTURE0 + textureUnit);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+}
+
+
+void Renderer::DrawHeightmap(Camera* camera, Shader* shader, bool shadowSW) {
+	BindAndSetShader(shader, camera, shadowSW);
+
+	SetTexture(earthTex, 0, "diffuseTex");
+	SetTexture(earthBump, 1, "bumpTex");
+
+	if (shadowSW) {
+		SetTexture(shadowTex, 2, "shadowTex");
+	}
+
+	modelMatrix.ToIdentity();
+	UpdateShaderMatrices();
 	heightMap->Draw();
+}
+
+void Renderer::DrawHeightmapDaylight(Camera* camera, bool shadowSW) {
+	DrawHeightmap(camera, shadowSW ? heightmapshadowShader : lightShader, shadowSW);
+}
+
+void Renderer::DrawHeightmapNight(Camera* camera) {
+	DrawHeightmap(camera, heightmapNolightShader, false);
 }
 
 
 //switch Scene
-void Renderer::RenderSceneDaylight()
-{
-	currentSkybox=cubeMapSunset;
-	BuildNodeLists(root);
-	SortNodeLists();
+void Renderer::RenderSceneDaylight() {
+	currentSkybox = cubeMapSunset;
+	PrepareScene();
 
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-	glViewport(0, 0, width, height);
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
-		(float)width / (float)height, 45.0f);
 	DrawSkybox(currentSkybox);
-	DrawHeightmap(camera, false);
+	DrawHeightmapDaylight(camera, false);
 	DrawNodes(camera, true, false);
-	DrawWater(camera, true, false);
+	DrawWater(camera, false);
 
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, false);
-	DrawNodes(generalCamera, true, false);
-
+	RenderMiniMap();
 	ClearNodeLists();
 }
 
-void Renderer::RenderSceneNight()
-{
-	currentSkybox=cubeMapNight;
-	BuildNodeLists(root);
-	SortNodeLists();
+void Renderer::RenderSceneNight() {
+	currentSkybox = cubeMapNight;
+	PrepareScene();
 
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-	glViewport(0, 0, width, height);
 	DrawScene();
 	DrawPointLights();
 	CombineBuffers();
 
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, false);
-	DrawNodes(generalCamera, true, false);
-
+	RenderMiniMap();
 	ClearNodeLists();
 }
 
-void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
+void Renderer::RenderMiniMap() {
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(0 * width, 0.8 * height, (width / height) * width / 5, (width / height) * height / 5);
+	DrawHeightmapDaylight(generalCamera, false);
+	DrawNodes(generalCamera, true, false);
+}
+
+void Renderer::PrepareScene() {
+	BuildNodeLists(root);
+	SortNodeLists();
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+}
+
+#pragma endregion
+
+#pragma region Update Water
+void Renderer::DrawWater(Camera* camera, bool shadowSW)
 {
-	if (SW)
-	{
+
 		BindShader(waterShader);
 		SetShaderLight(*light);
 		Vector3 hSize = heightMap->GetHeightmapSize();
@@ -738,7 +712,7 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 		projMatrix = defaultprojMatrix;
 		viewMatrix = camera->BuildViewMatrix();
 		UpdateShaderMatrices();
-	}
+
 	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(),
 		"cameraPos"), 1, (float*)&camera->GetPosition());
 
@@ -759,8 +733,7 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapSunset);
-
-	Vector3 hSize = heightMap->GetHeightmapSize();
+	
 	modelMatrix = Matrix4::Translation(Vector3(hSize.x-2000, hSize.y-200.0f, hSize.z-2000)) *
 		Matrix4::Scale(hSize*0.5) *
 		Matrix4::Rotation(90, Vector3(1, 0, 0));
@@ -768,92 +741,67 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 
 	skyboxQuad->Draw();
 }
+#pragma endregion
 
-void Renderer::RenderSceneBlur()
-{
-	BuildNodeLists(root);
-	SortNodeLists();
-
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+#pragma region Post Processing
+void Renderer::ClearBuffers(const Vector4& color) {
+	glClearColor(color.x, color.y, color.z, color.w);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, width, height);
-	DrawBlurScene();
-	DrawPostProcess();
-	PresentScene();
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
-	DrawHeightmap(generalCamera, false);
-	DrawNodes(generalCamera, true, false);
-	DrawWater(generalCamera, true, false);
-
-	ClearNodeLists();
 }
 
-//post processing
-void Renderer::DrawBlurScene()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	DrawSkybox(currentSkybox);
-	DrawHeightmap(camera, false);
-	DrawNodes(camera, true, false);
-	DrawWater(camera, true, false);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+void Renderer::SetupFramebuffer(GLuint framebuffer, GLuint texture) {
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 }
-void Renderer::DrawPostProcess()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_TEXTURE_2D, blurbufferColourTex[1], 0);
 
-	BindShader(processShader);
-	modelMatrix.ToIdentity();
-	viewMatrix.ToIdentity();
-	projMatrix.ToIdentity();
-	textureMatrix.ToIdentity();
-	UpdateShaderMatrices();
-
-	glDisable(GL_DEPTH_TEST);
-
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(processShader->GetProgram(), "sceneTex"), 0);
-	for (int i = 0; i < POST_PASSES; ++i)
-	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurbufferColourTex[1], 0);
-		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 0);
-
-		glBindTexture(GL_TEXTURE_2D, blurbufferColourTex[0]);
-		skyboxQuad->Draw();
-
-		//now to swap colour buffers,and do the second blur pass
-		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 1);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurbufferColourTex[0], 0);
-
-		glBindTexture(GL_TEXTURE_2D, blurbufferColourTex[1]);
-		skyboxQuad->Draw();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
-}
-void Renderer::PresentScene()
-{
-	BindShader(blurShader);
+void Renderer::DrawQuadWithShader(Shader* shader, GLuint texture, const std::string& uniformName) {
+	BindShader(shader);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
 	projMatrix.ToIdentity();
 	UpdateShaderMatrices();
+
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, blurbufferColourTex[0]);
-	glUniform1i(glGetUniformLocation(blurShader->GetProgram(), "diffuseTex"), 0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), uniformName.c_str()), 0);
 	skyboxQuad->Draw();
 }
+void Renderer::RenderSceneBlur() {
+	PrepareScene();
+	DrawBlurScene();
+	PostProcessBlur();
+	RenderMiniMap();
+	ClearNodeLists();
+}
+void Renderer::DrawBlurScene() {
+	SetupFramebuffer(blurbufferFBO, blurbufferColourTex[0]);
+	ClearBuffers(Vector4(0, 0, 0, 1));
+
+	DrawSkybox(currentSkybox);
+	DrawHeightmapDaylight(camera, false);
+	DrawNodes(camera, true, false);
+	DrawWater(camera, false);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::PostProcessBlur() {
+	for (int i = 0; i < POST_PASSES; ++i) {
+		SetupFramebuffer(processFBO, blurbufferColourTex[1]);
+		DrawQuadWithShader(processShader, blurbufferColourTex[0], "sceneTex");
+		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 0);
+
+		SetupFramebuffer(processFBO, blurbufferColourTex[0]);
+		DrawQuadWithShader(processShader, blurbufferColourTex[1], "sceneTex");
+		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 1);
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 
+#pragma endregion
 
-//deferred rendering
+#pragma region Deferred rendering and Point light
 void Renderer::DrawScene()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
@@ -862,27 +810,36 @@ void Renderer::DrawScene()
 		(float)width / (float)height, 45.0f);
 
 	DrawSkybox(currentSkybox);
-	DrawHeightmapNight();
+	DrawHeightmapDaylight(camera,false);
 	DrawNodes(camera, true, false);
 	if (currentSkybox==cubeMapSunset)
 	{
-		DrawWater(camera, true, false);
+		DrawWater(camera, false);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::DrawPointLights()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+void Renderer::DrawPointLights() {
+	PreparePointLightFramebuffer();
+	
 	BindShader(pointlightShader);
+	SetPointLightShaderUniforms();
+	
+	DrawAllPointLights();
+	RestoreDefaultRenderState();
+}
 
+void Renderer::PreparePointLightFramebuffer() {
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBlendFunc(GL_ONE, GL_ONE);
 	glCullFace(GL_FRONT);
 	glDepthFunc(GL_ALWAYS);
 	glDepthMask(GL_FALSE);
+}
 
+void Renderer::SetPointLightShaderUniforms() {
 	glUniform1i(glGetUniformLocation(pointlightShader->GetProgram(), "depthTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
@@ -892,29 +849,31 @@ void Renderer::DrawPointLights()
 	glBindTexture(GL_TEXTURE_2D, bufferNormalTex);
 
 	glUniform3fv(glGetUniformLocation(pointlightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
 	glUniform2f(glGetUniformLocation(pointlightShader->GetProgram(), "pixelSize"), 1.0f / width, 1.0f / height);
 
 	Matrix4 invViewProj = (projMatrix * viewMatrix).Inverse();
 	glUniformMatrix4fv(glGetUniformLocation(pointlightShader->GetProgram(), "inverseProjView"), 1, false, invViewProj.values);
 	UpdateShaderMatrices();
-	for (int i = 0; i < 40; ++i) {
-		Light& l = pointLights[i];
-		SetShaderLight(l);
+}
+
+void Renderer::DrawAllPointLights() {
+	for (int i = 0; i < 5; ++i) {
+		SetShaderLight(pointLights[i]);
 		sphere->Draw();
 	}
 	sphere->Draw();
+}
 
+void Renderer::RestoreDefaultRenderState() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glCullFace(GL_BACK);
 	glDepthFunc(GL_LEQUAL);
-
 	glDepthMask(GL_TRUE);
 
 	glClearColor(0.2f, 0.2f, 0.2f, 1);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
 void Renderer::CombineBuffers()
 {
 	BindShader(combineShader);
@@ -938,8 +897,9 @@ void Renderer::CombineBuffers()
 	skyboxQuad->Draw();
 }
 
+#pragma endregion
 
-//other functions
+
 void Renderer::ClearNodeLists()
 {
 	transparentNodeList.clear();
