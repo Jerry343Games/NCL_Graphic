@@ -28,7 +28,7 @@ protected:
 	void SortNodeLists();
 	void ClearNodeLists();
 	void DrawNodes(Camera* camera, bool SW, bool shadowSW);
-	void DrawNode(Camera* camera, SceneNode* n, bool SW, bool shadowSW);
+	void DrawNode(Camera* camera, SceneNode* n, bool shadowSW);
 
 	//skybox,heightmap,water functions
 	void DrawSkybox(GLuint skybox);
@@ -48,12 +48,6 @@ protected:
 	void DrawPointLights();
 	void CombineBuffers();
 	void GenerateScreenTexture(GLuint& into, bool depth = false);
-
-	//shadow mapping
-	void DrawNodesShadow();
-	void DrawNodeShadow(SceneNode* n);
-	void DrawShadowMapping();
-	void DrawCombinedScene();
 
 
 	SceneNode* root;

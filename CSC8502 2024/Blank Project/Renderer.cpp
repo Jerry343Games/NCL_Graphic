@@ -26,9 +26,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	soldierAnim = new MeshAnimation("Role_T.anm");
 	soldierMat = new MeshMaterial("Role_T.mat");
 
-	heightMap = new HeightMap(TEXTUREDIR"noise.png");
-
-	//load Textures
+	
+#pragma region Load Texture and Skybox
 	cubeMapSunset = SOIL_load_OGL_cubemap(
 	TEXTUREDIR"rusted_west.jpg", TEXTUREDIR"rusted_east.jpg",
 	TEXTUREDIR"rusted_up.jpg", TEXTUREDIR"rusted_down.jpg",
@@ -44,51 +43,31 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	{
 		return;
 	}
-	//default
+	//default skybox
 	currentSkybox=cubeMapSunset;
+	
+	heightMap = new HeightMap(TEXTUREDIR"noise.png");
 	
 	cactusTex = SOIL_load_OGL_texture(TEXTUREDIR"Gradients_02_flip.png",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!cactusTex)
-	{
-		return;
-	}
+
 
 	earthTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"Ground035_1K-JPG_Color.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!earthTex)
-	{
-		return;
-	}
-
+	
 	earthBump = SOIL_load_OGL_texture(
 		TEXTUREDIR"Dirt_1_Normal.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!earthBump)
-	{
-		return;
-	}
+
 
 	waterTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"water.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!waterTex)
-	{
-		return;
-	}
+
 
 	waterBump = SOIL_load_OGL_texture(
 		TEXTUREDIR"waterbump.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	if (!waterBump)
-	{
-		return;
-	}
 	
-
 	glassTex = SOIL_load_OGL_texture(
 		TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
-	if (!glassTex)
-	{
-		return;
-	}
 
 	for (int i = 0; i < soldier->GetSubMeshCount(); ++i)
 	{
@@ -106,11 +85,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		}
 		soldiermatTextures.emplace_back(texID);
 	}
-
-
-
-
-
+	
 	SetTextureRepeating(earthTex, true);
 	SetTextureRepeating(waterBump, true);
 	SetTextureRepeating(earthBump, true);
@@ -118,155 +93,82 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(cactusTex, true);
 	SetTextureRepeating(rockTex, true);
 
+#pragma endregion
 
-
-	//load shaders
+#pragma region Load Shader
 	skyboxShader = new Shader(
 		"skyboxVertex.glsl", "skyboxFragment.glsl"
 	);
-	if (!skyboxShader->LoadSuccess())
-	{
-		return;
-	}
 
 	blurShader = new Shader(
 		"TexturedVertex.glsl", "TexturedFragment.glsl"
 	);
-	if (!blurShader->LoadSuccess())
-	{
-		return;
-	}
 
 	emitterShader = new Shader(
 		"vertex.glsl", "fragment.glsl", "geometry.glsl"
 	);
-	if (!emitterShader->LoadSuccess())
-	{
-		return;
-	}
 
 	processShader = new Shader(
 		"TexturedVertex.glsl", "processfrag.glsl"
 	);
-	if (!processShader->LoadSuccess())
-	{
-		return;
-	}
-
 	lightShader = new Shader(
 		"BumpVertex.glsl", "BumpFragment.glsl"
 	);
-	if (!lightShader->LoadSuccess())
-	{
-		return;
-	}
 
 	waterShader = new Shader(
 		"waterVertex.glsl", "waterFragment.glsl"
 	);
-	if (!waterShader->LoadSuccess())
-	{
-		return;
-	}
 
 
 	scenegraphShader = new Shader(
 		"PerPixelVertex.glsl", "PerPixelFragment.glsl"
 	);
-	if (!scenegraphShader->LoadSuccess())
-	{
-		return;
-	}
 
 
 	soldierShader = new Shader(
 		"SkinningVertex.glsl", "PerPixelFragment.glsl"
 	);
-	if (!soldierShader->LoadSuccess())
-	{
-		return;
-	}
 
 	postShader = new Shader(
 		"TexturedVertex.glsl", "processfrag.glsl"
 	);
-	if (!postShader->LoadSuccess())
-	{
-		return;
-	}
-
-
+	
 	heightmapNolightShader = new Shader(
 		"BumpVertex.glsl", "bufferFragment.glsl"
 	);
-	if (!heightmapNolightShader->LoadSuccess())
-	{
-		return;
-	}
 
 	pointlightShader = new Shader(
 		"pointlightvert.glsl", "pointlightfrag.glsl"
 	);
-	if (!pointlightShader->LoadSuccess())
-	{
-		return;
-	}
 
 	combineShader = new Shader(
 		"combinevert.glsl", "combinefrag.glsl"
 	);
-	if (!combineShader->LoadSuccess())
-	{
-		return;
-	}
 
 	shadowShader = new Shader(
 		"shadowVertex.glsl", "shadowFragment.glsl"
 	);
-	if (!shadowShader->LoadSuccess())
-	{
-		return;
-	}
 
 	watershadowShader = new Shader(
 		"reflectShadowVertex.glsl", "reflectShadowFragment.glsl"
 	);
-	if (!watershadowShader->LoadSuccess())
-	{
-		return;
-	}
 
 	bumpshadowShader = new Shader(
 		"BumpShadowVertex.glsl", "BumpShadowFragment.glsl"
 	);
-	if (!bumpshadowShader->LoadSuccess())
-	{
-		return;
-	}
 
 	PerPixelshaodwShader = new Shader(
 		"PerPixelShadowVertex.glsl", "PerPixelShadowFragment.glsl"
 	);
-	if (!PerPixelshaodwShader->LoadSuccess())
-	{
-		return;
-	}
 
 	soldiershadowShader = new Shader(
 		"SkinningshadowVertex.glsl", "shadowFragment.glsl"
 	);
-	if (!soldiershadowShader->LoadSuccess())
-	{
-		return;
-	}
 
 	animationshadowShader = new Shader(
 		"SkinningVertex01.glsl", "PerPixelShadowFragment.glsl"
 	);
-	if (!animationshadowShader->LoadSuccess())
-	{
-		return;
-	}
+#pragma endregion
 
 	//创建 scenegraph
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
@@ -318,10 +220,10 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	SceneNode* boneNode = new SceneNode();
 	boneNode->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	boneNode->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.5f, 0.5f, 0.5f))); // 场景中央
+	boneNode->SetTransform(Matrix4::Translation(heightmapSize * Vector3(0.5f, 0.5f, 0.5f))); 
 	boneNode->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
 	boneNode->SetMesh(bone); // 使用 bone 模型
-	boneNode->SetTexture(cactusTex); // 假设 bone 使用 cactusTex 作为纹理
+	boneNode->SetTexture(cactusTex);
 	boneNode->SetType(TYPE_NORMAL);
 	root->AddChild(boneNode);
 	
@@ -604,17 +506,15 @@ void Renderer::OrbitCamera(float dt) {
 	Vector3 center = heightmapsize * Vector3(0.5f, 5.0f, 0.5f);
 
 	// Բ�ܰ뾶���ٶȿ��Ʋ���
-	float radius = 2000.0f;   // Բ�ܰ뾶�����ڴ�С�����˶���Χ
-	float speed = -0.1f;      // �ٶȣ�����ÿ����ת�ĽǶ�
-
-	// ʹ��ʱ���ۻ��Ƕȣ�ʹ�����Բ�����ƶ�
+	float radius = 2000.0f; 
+	float speed = -0.1f;     
+	
 	static float angle = 0.0f;
-	angle += speed * dt; // ÿ֡���ӽǶ�
-
-	// ����Բ���˶���λ��
+	angle += speed * dt; 
+	
 	float x = center.x + radius * cos(angle);
 	float z = center.z + radius * sin(angle);
-	float y = center.y + 5.0f; // ���ø߶ȣ��������Ҫ����
+	float y = center.y + 5.0f; 
 
 	// �������λ��
 	Vector3 cameraPos(x, y, z);
@@ -622,15 +522,12 @@ void Renderer::OrbitCamera(float dt) {
 
 	// �����������Բ�ĵķ���
 	Vector3 directionToCenter = (cameraPos - center).Normalised();
-
-	// ���������ƫ���� (Yaw) �͸����� (Pitch) ʹ�䳯��Բ��
+	
 	float yaw = atan2(directionToCenter.x, directionToCenter.z) * (180.0f / 3.1415926f);
-	float pitch = -asin(directionToCenter.y) * (180.0f / 3.1415926f);
 
 	camera->SetYaw(yaw);
 	camera->SetPitch(-35.0f);
-
-	// ���¼�����ͼ����
+	
 	viewMatrix = camera->BuildViewMatrix();
 
 	// ����ԭ�е� waterRotate �� waterCycle ����
@@ -655,10 +552,11 @@ void Renderer::OrbitCamera(float dt) {
 	root->Update(dt);
 }
 
-//scenegraph part
+
+
+#pragma region Scene Graph
 void Renderer::BuildNodeLists(SceneNode* from)
 {
-
 	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
 	from->SetCameraDistance(Vector3::Dot(dir, dir));
 
@@ -685,146 +583,128 @@ void Renderer::SortNodeLists()
 		nodeList.end(),
 		SceneNode::CompareByCameraDistance);
 }
+
 void Renderer::DrawNodes(Camera* camera, bool SW, bool shadowSW)
 {
 	for (const auto& i : nodeList)
 	{
-		DrawNode(camera, i, SW, shadowSW);
+		DrawNode(camera, i, shadowSW);
 	}
 	for (const auto& i : transparentNodeList)
 	{
-		DrawNode(camera, i, SW, shadowSW);
+		DrawNode(camera, i, shadowSW);
 	}
 }
-void Renderer::DrawNode(Camera* camera, SceneNode* n, bool SW, bool shadowSW)
+
+void Renderer::DrawNode(Camera* camera, SceneNode* n, bool shadowSW)
 {
 	if (n->GetMesh())
 	{
 		//determine to use which shader
-		if (SW)
+		if (shadowSW)
 		{
-			if (shadowSW)
+			if (n->GetType() == TYPE_ANIMATION)
 			{
-				if (n->GetType() == TYPE_ANIMATION)
-				{
-					BindShader(animationshadowShader);
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-					SetShaderLight(*light2);
-					glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-					glActiveTexture(GL_TEXTURE2);
-					glBindTexture(GL_TEXTURE_2D, shadowTex);
-				}
-				else if (n->GetType() == TYPE_BUMP)
-				{
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-					SetShaderLight(*light2);
-					glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-					glActiveTexture(GL_TEXTURE2);
-					glBindTexture(GL_TEXTURE_2D, shadowTex);
-				}
-				else if (n->GetType() == TYPE_NORMAL)
-				{
-					BindShader(PerPixelshaodwShader);
-					SetShaderLight(*light2);
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-					glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-					glActiveTexture(GL_TEXTURE2);
-					glBindTexture(GL_TEXTURE_2D, shadowTex);
-				}
+				BindShader(animationshadowShader);
+				viewMatrix = camera->BuildViewMatrix();
+				projMatrix = defaultprojMatrix;
+				SetShaderLight(*light2);
+				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, shadowTex);
 			}
-			else
+			else if (n->GetType() == TYPE_NORMAL)
 			{
-				if (n->GetType() == TYPE_ANIMATION)
-				{
-					BindShader(soldierShader);
-					SetShaderLight(*light);
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-				}
-				else if (n->GetType() == TYPE_BUMP)
-				{
-					BindShader(lightShader);
-					SetShaderLight(*light);
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-				}
-				else if (n->GetType() == TYPE_NORMAL)
-				{
-					BindShader(scenegraphShader);
-					SetShaderLight(*light);
-					viewMatrix = camera->BuildViewMatrix();
-					projMatrix = defaultprojMatrix;
-				}
-			}
-		}
-
-		if (n == soldierNode)
-		{
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-			UpdateShaderMatrices();
-
-			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-			glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
-
-			glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-			nodeTexture = soldiermatTextures[0];
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
-
-
-			vector<Matrix4> frameMatrices;
-
-			const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
-			const Matrix4* frameData = n->GetAnimation()->GetJointData(n->GetCurrentFrame());
-
-			for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
-			{
-				frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
-			}
-
-			int j = glGetUniformLocation(GetCurrentShader()->GetProgram(), "joints");
-			glUniformMatrix4fv(j, frameMatrices.size(), false,
-				(float*)frameMatrices.data());
-
-			for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
-			{
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, n->GetTextures()[i]);
-				n->GetMesh()->DrawSubMesh(i);
+				BindShader(PerPixelshaodwShader);
+				SetShaderLight(*light2);
+				viewMatrix = camera->BuildViewMatrix();
+				projMatrix = defaultprojMatrix;
+				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, shadowTex);
 			}
 		}
 		else
 		{
-			UpdateShaderMatrices();
-
-
-
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-
-			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-			glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
-			glUniform4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-
-			glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-			nodeTexture = n->GetTexture();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, nodeTexture);
-
-
-			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
-			n->Draw(*this);
+			if (n->GetType() == TYPE_ANIMATION)
+			{
+				BindShader(soldierShader);
+				SetShaderLight(*light);
+				viewMatrix = camera->BuildViewMatrix();
+				projMatrix = defaultprojMatrix;
+			}
+			else if (n->GetType() == TYPE_NORMAL)
+			{
+				BindShader(scenegraphShader);
+				SetShaderLight(*light);
+				viewMatrix = camera->BuildViewMatrix();
+				projMatrix = defaultprojMatrix;
+			}
 		}
 	}
+
+	if (n == soldierNode)
+	{
+		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
+		UpdateShaderMatrices();
+
+		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
+
+		glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+		nodeTexture = soldiermatTextures[0];
+		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
+
+
+		vector<Matrix4> frameMatrices;
+
+		const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
+		const Matrix4* frameData = n->GetAnimation()->GetJointData(n->GetCurrentFrame());
+
+		for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
+		{
+			frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+		}
+
+		int j = glGetUniformLocation(GetCurrentShader()->GetProgram(), "joints");
+		glUniformMatrix4fv(j, frameMatrices.size(), false,
+			(float*)frameMatrices.data());
+
+		for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, n->GetTextures()[i]);
+			n->GetMesh()->DrawSubMesh(i);
+		}
+	}
+	else
+	{
+		//绘制物体
+		UpdateShaderMatrices();
+			
+		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
+
+		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
+		glUniform4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+
+		glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+		nodeTexture = n->GetTexture();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, nodeTexture);
+
+
+		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
+		n->Draw(*this);
+	}
 }
+#pragma  endregion
 
 
 
 
-
-//Sky,water,island part
+//Sky,water,terrain
 void Renderer::DrawSkybox(GLuint skybox)
 {
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -872,7 +752,6 @@ void Renderer::DrawHeightmap(Camera* camera, bool SW, bool shadowSW)
 			projMatrix = defaultprojMatrix;
 		}
 	}
-	/*SetShaderLight(*light2);*/
 	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
 	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
@@ -964,9 +843,6 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 
 
 
-
-
-
 //switch Scene
 void Renderer::RenderSceneDaylight()
 {
@@ -985,6 +861,7 @@ void Renderer::RenderSceneDaylight()
 	DrawHeightmap(camera, true, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
+	//DrawShadow();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0.75 * width, 0.66 * height, (width / height) * width / 3, (width / height) * height / 3);
@@ -1036,7 +913,7 @@ void Renderer::RenderSceneBlur()
 	ClearNodeLists();
 }
 
-//post processing rendering
+//post processing
 void Renderer::DrawBlurScene()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
@@ -1187,141 +1064,6 @@ void Renderer::CombineBuffers()
 	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
 
 	skyboxQuad->Draw();
-}
-
-
-
-
-
-//shaodw rendering
-void Renderer::DrawNodesShadow()
-{
-	for (const auto& i : nodeList)
-	{
-		DrawNodeShadow(i);
-	}
-	for (const auto& i : transparentNodeList)
-	{
-		DrawNodeShadow(i);
-	}
-}
-void Renderer::DrawNodeShadow(SceneNode* n)
-{
-	if (n->GetMesh())
-	{
-		if (n != rain)
-		{
-			if (n != soldierNode)
-			{
-
-				BindShader(shadowShader);
-				Vector3 hSize = heightMap->GetHeightmapSize();
-				viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(hSize.x, 0.0f, hSize.z));
-				projMatrix = Matrix4::Orthographic(20.0f, 2000000.0f, -10000.0f, 10000.0f, -10000.0f, 10000.0f);
-				shadowMatrix = projMatrix * viewMatrix;
-				Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-				modelMatrix = model;
-				UpdateShaderMatrices();
-				n->GetMesh()->Draw();
-			}
-			else
-			{
-				BindShader(soldiershadowShader);
-				Vector3 hSize = heightMap->GetHeightmapSize();
-				viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(hSize.x, 0.0f, hSize.z));
-				projMatrix = Matrix4::Orthographic(20.0f, 2000000.0f, -10000.0f, 10000.0f, -10000.0f, 10000.0f);
-				shadowMatrix = projMatrix * viewMatrix;
-				Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-				modelMatrix = model;
-				UpdateShaderMatrices();
-				vector<Matrix4> frameMatrices;
-
-				const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
-				const Matrix4* frameData = n->GetAnimation()->GetJointData(n->GetCurrentFrame());
-
-				for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
-				{
-					frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
-				}
-
-				int j = glGetUniformLocation(GetCurrentShader()->GetProgram(), "joints");
-				glUniformMatrix4fv(j, frameMatrices.size(), false,
-					(float*)frameMatrices.data());
-
-				for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
-				{
-					n->GetMesh()->DrawSubMesh(i);
-				}
-			}
-		}
-	}
-}
-void Renderer::DrawShadowMapping()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, SHADOWSIZE, SHADOWSIZE);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-
-
-	BindShader(shadowShader);
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	viewMatrix = Matrix4::BuildViewMatrix(light->GetPosition(), Vector3(hSize.x, 0.0f, hSize.z));
-	projMatrix = Matrix4::Orthographic(20.0f, 2000000.0f, -10000.0f, 10000.0f, -10000.0f, 10000.0f);
-	shadowMatrix = projMatrix * viewMatrix;
-
-	modelMatrix.ToIdentity();
-	UpdateShaderMatrices();
-	heightMap->Draw();
-
-	modelMatrix = rockmodelMatrix;
-	UpdateShaderMatrices();
-	rock->Draw();
-
-	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 6.0f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
-	UpdateShaderMatrices();
-	skyboxQuad->Draw();
-
-	DrawNodesShadow();
-
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glViewport(0, 0, width, height);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glDisable(GL_CULL_FACE);
-}
-void Renderer::DrawCombinedScene()
-{
-	BindShader(bumpshadowShader);
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = defaultprojMatrix;
-	SetShaderLight(*light2);
-	UpdateShaderMatrices();
-	DrawHeightmap(camera, false, false);
-
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	viewMatrix = camera->BuildViewMatrix();
-	projMatrix = defaultprojMatrix;
-	glUniform1i(glGetUniformLocation(bumpshadowShader->GetProgram(), "diffuseTex"), 0);
-	glUniform1i(glGetUniformLocation(bumpshadowShader->GetProgram(), "bumpTex"), 1);
-	glUniform1i(glGetUniformLocation(bumpshadowShader->GetProgram(), "shadowTex"), 2);
-	glUniform3fv(glGetUniformLocation(bumpshadowShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, rockTex);
-
-	glActiveTexture(GL_TEXTURE1);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, shadowTex);
-	modelMatrix = rockmodelMatrix;
-	UpdateShaderMatrices();
-	rock->Draw();
-
-	DrawNodes(camera, true, true);
-
 }
 
 
