@@ -424,14 +424,11 @@ void Renderer::UpdateScene(float dt) {
 
 
 void Renderer::OrbitCamera(float dt) {
-
-	// ��ȡ heightMap �ߴ���ΪԲ��λ�õĲο�
+	
 	Vector3 heightmapsize = heightMap->GetHeightmapSize();
 	
-	// Բ��λ��
 	Vector3 center = heightmapsize * Vector3(0.5f, 5.0f, 0.5f);
-
-	// Բ�ܰ뾶���ٶȿ��Ʋ���
+	
 	float radius = 2000.0f; 
 	float speed = -0.1f;     
 	
@@ -442,11 +439,10 @@ void Renderer::OrbitCamera(float dt) {
 	float z = center.z + radius * sin(angle);
 	float y = center.y + 5.0f; 
 
-	// �������λ��
+
 	Vector3 cameraPos(x, y, z);
 	camera->SetPosition(cameraPos);
-
-	// �����������Բ�ĵķ���
+	
 	Vector3 directionToCenter = (cameraPos - center).Normalised();
 	
 	float yaw = atan2(directionToCenter.x, directionToCenter.z) * (180.0f / 3.1415926f);
@@ -455,8 +451,7 @@ void Renderer::OrbitCamera(float dt) {
 	camera->SetPitch(-35.0f);
 	
 	viewMatrix = camera->BuildViewMatrix();
-
-	// ����ԭ�е� waterRotate �� waterCycle ����
+	
 	flowRotate += dt * 0.5f;
 	flowSpeed += dt * 0.15f;
 	
