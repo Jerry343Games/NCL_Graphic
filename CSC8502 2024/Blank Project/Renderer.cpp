@@ -9,7 +9,8 @@ const int POST_PASSES = 10;
 //initaiise and destructor part
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
-	//load meshes(animations and materials)
+#pragma region Load Mesh and Ani
+	
 	skyboxQuad = Mesh::GenerateQuad();
 
 	sphere = Mesh::LoadFromMeshFile("Sphere.msh");
@@ -23,9 +24,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	bone =Mesh:: LoadFromMeshFile("bone.msh");
 
 	soldier = Mesh::LoadFromMeshFile("Role_T.msh");
+	
 	soldierAnim = new MeshAnimation("Role_T.anm");
+	
 	soldierMat = new MeshMaterial("Role_T.mat");
-
+#pragma endregion
 	
 #pragma region Load Texture and Skybox
 	cubeMapSunset = SOIL_load_OGL_cubemap(
@@ -170,7 +173,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	);
 #pragma endregion
 
-	//创建 scenegraph
+#pragma region Creat Scenegraph with random generation
+	
 	Vector3 heightmapSize = heightMap->GetHeightmapSize();
 
 	root = new SceneNode();
@@ -179,14 +183,15 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	srand(static_cast<unsigned>(time(nullptr)));
 
-	// 随机生成每种模型的数量在 5 到 8 之间
+	//get random counts of meshes
 	int numCactus12 = 5 + rand() % 4;
 	int numCactus09 = 5 + rand() % 4; 
 	int numRock = 5 + rand() % 4;     
 
-	// 合并为一个总数
+	//add
 	int totalModels = numCactus12 + numCactus09 + numRock;
 
+	//generate random position for each mesh
 	for (int i = 0; i < totalModels; ++i) 
 	{
 		SceneNode* s = new SceneNode();
@@ -195,7 +200,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		float randomX = static_cast<float>(rand()) / RAND_MAX;
 		float randomZ = static_cast<float>(rand()) / RAND_MAX;
     
-		// 根据当前循环计数选择模型类型和位置
+		
 		if (i < numCactus12) {
 			s->SetTransform(Matrix4::Translation(heightmapSize * Vector3(randomX, 0.3f, randomZ)));
 			s->SetMesh(cactus_12);
@@ -235,14 +240,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	soldierNode->SetAnimation(soldierAnim);
 	soldierNode->SetType(TYPE_ANIMATION);
 	root->AddChild(soldierNode);
-	
+
+#pragma endregion
+
+#pragma region Creat camera and light
 
 	//create camera and light
 	camera = new Camera(-15.0f, 50.0f,heightmapSize * Vector3(1.3f, 3.0f, 1.3f));
 	generalCamera = new Camera(-90.0f, 0.0f,heightmapSize * Vector3(0.5f, 10.0f, 0.5f));
 	
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 1.0f),Vector4(1, 1, 1, 1), heightmapSize.x);
-	//light2 = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f),Vector4(1, 1, 1, 1), 10000.0f);
 	pointLights = new Light[5];
 
 	for (int i = 0; i < 5; ++i) 
@@ -259,18 +266,17 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	defaultprojMatrix = Matrix4::Perspective(1.0f, 15000.0f,
 		(float)width / (float)height, 45.0f);
 	projMatrix = defaultprojMatrix;
+#pragma endregion
 
 
-	//water properties
+	//water
 	flowRotate = 0.0f;
 	flowSpeed = 0.0f;
-
+	
 	//animation properties
 	soldiercurrentFrame = 0;
 	soldierframeTime = 0.0f;
 	
-	rockmodelMatrix = Matrix4::Translation(heightmapSize * Vector3(0.5f, 1.5f, 0.5f)) * Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) * Matrix4::Rotation(90, Vector3(1, 0, 0));
-
 	//generate FBOs
 	glGenFramebuffers(1, &bufferFBO);
 	glGenFramebuffers(1, &processFBO);
@@ -348,7 +354,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 
 	//bind FBO's attachments
-		//deferred rendering FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_TEXTURE_2D, bufferDepthTex, 0);
@@ -364,7 +369,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
-	//light FBO 
+	//FBO light 
 	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
 		GL_TEXTURE_2D, lightDiffuseTex, 0);
@@ -377,7 +382,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
-	//blur FBO
+	//FBO blue
 	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_TEXTURE_2D, blurbufferDepthTex, 0);
@@ -517,8 +522,7 @@ void Renderer::OrbitCamera(float dt) {
 	// ����ԭ�е� waterRotate �� waterCycle ����
 	flowRotate += dt * 0.5f;
 	flowSpeed += dt * 0.15f;
-
-	// ���¶�����ʱ�䴦��
+	
 	soldierframeTime -= dt;
 	while (soldierframeTime < 0.0f) {
 		soldiercurrentFrame = (soldiercurrentFrame + 1) % soldierAnim->GetFrameCount();
@@ -530,153 +534,112 @@ void Renderer::OrbitCamera(float dt) {
 }
 
 
-
 #pragma region Scene Graph
-void Renderer::BuildNodeLists(SceneNode* from)
-{
-	Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
-	from->SetCameraDistance(Vector3::Dot(dir, dir));
+void Renderer::BuildNodeLists(SceneNode* from) {
+    Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
+    from->SetCameraDistance(Vector3::Dot(dir, dir));
 
-	if (from->GetColour().w < 1.0f)
-	{
-		transparentNodeList.push_back(from);
-	}
-	else
-	{
-		nodeList.push_back(from);
-	}
+    if (from->GetColour().w < 1.0f) {
+        transparentNodeList.push_back(from);
+    } else {
+        nodeList.push_back(from);
+    }
 
-	for (vector<SceneNode*>::const_iterator i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i)
-	{
-		BuildNodeLists((*i));
-	}
-}
-void Renderer::SortNodeLists()
-{
-	std::sort(transparentNodeList.rbegin(),
-		transparentNodeList.rend(),
-		SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(),
-		nodeList.end(),
-		SceneNode::CompareByCameraDistance);
+    for (auto i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
+        BuildNodeLists(*i);
+    }
 }
 
-void Renderer::DrawNodes(Camera* camera, bool SW, bool shadowSW)
-{
-	for (const auto& i : nodeList)
-	{
-		DrawNode(camera, i, shadowSW);
-	}
-	for (const auto& i : transparentNodeList)
-	{
-		DrawNode(camera, i, shadowSW);
-	}
+void Renderer::SortNodeLists() {
+    std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
+    std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
 }
 
-void Renderer::DrawNode(Camera* camera, SceneNode* n, bool shadowSW)
-{
-	if (n->GetMesh())
-	{
-		//determine to use which shader
-		if (shadowSW)
-		{
-			if (n->GetType() == TYPE_ANIMATION)
-			{
-				BindShader(animationshadowShader);
-				viewMatrix = camera->BuildViewMatrix();
-				projMatrix = defaultprojMatrix;
-				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-				glActiveTexture(GL_TEXTURE2);
-				glBindTexture(GL_TEXTURE_2D, shadowTex);
-			}
-			else if (n->GetType() == TYPE_NORMAL)
-			{
-				BindShader(PerPixelshaodwShader);
-				viewMatrix = camera->BuildViewMatrix();
-				projMatrix = defaultprojMatrix;
-				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
-				glActiveTexture(GL_TEXTURE2);
-				glBindTexture(GL_TEXTURE_2D, shadowTex);
-			}
-		}
-		else
-		{
-			if (n->GetType() == TYPE_ANIMATION)
-			{
-				BindShader(soldierShader);
-				SetShaderLight(*light);
-				viewMatrix = camera->BuildViewMatrix();
-				projMatrix = defaultprojMatrix;
-			}
-			else if (n->GetType() == TYPE_NORMAL)
-			{
-				BindShader(scenegraphShader);
-				SetShaderLight(*light);
-				viewMatrix = camera->BuildViewMatrix();
-				projMatrix = defaultprojMatrix;
-			}
-		}
-	}
-
-	if (n == soldierNode)
-	{
-		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-		UpdateShaderMatrices();
-
-		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
-
-		glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-		nodeTexture = soldiermatTextures[0];
-		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
-
-
-		vector<Matrix4> frameMatrices;
-
-		const Matrix4* invBindPose = n->GetMesh()->GetInverseBindPose();
-		const Matrix4* frameData = n->GetAnimation()->GetJointData(n->GetCurrentFrame());
-
-		for (unsigned int i = 0; i < n->GetMesh()->GetJointCount(); ++i)
-		{
-			frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
-		}
-
-		int j = glGetUniformLocation(GetCurrentShader()->GetProgram(), "joints");
-		glUniformMatrix4fv(j, frameMatrices.size(), false,
-			(float*)frameMatrices.data());
-
-		for (int i = 0; i < n->GetMesh()->GetSubMeshCount(); ++i)
-		{
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, n->GetTextures()[i]);
-			n->GetMesh()->DrawSubMesh(i);
-		}
-	}
-	else
-	{
-		//绘制物体
-		UpdateShaderMatrices();
-			
-		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
-
-		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, model.values);
-		glUniform4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-
-		glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-
-		nodeTexture = n->GetTexture();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, nodeTexture);
-
-
-		glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
-		n->Draw(*this);
-	}
+void Renderer::DrawNodes(Camera* camera, bool SW, bool shadowSW) {
+    for (auto node : nodeList) {
+        DrawNode(camera, node, shadowSW);
+    }
+    for (auto node : transparentNodeList) {
+        DrawNode(camera, node, shadowSW);
+    }
 }
-#pragma  endregion
 
+void Renderer::DrawNode(Camera* camera, SceneNode* node, bool shadowSW) {
+    if (!node->GetMesh()) {
+        return;
+    }
 
+    // 设置适合的着色器
+    if (shadowSW) {
+        BindShader(shadowShader);
+        viewMatrix = camera->BuildViewMatrix();
+        projMatrix = defaultprojMatrix;
+        glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, shadowTex);
+    } else {
+        BindShader(node->GetType() == TYPE_ANIMATION ? soldierShader : scenegraphShader);
+        SetShaderLight(*light);
+        viewMatrix = camera->BuildViewMatrix();
+        projMatrix = defaultprojMatrix;
+    }
+
+    if (node == soldierNode) {
+        DrawSoldierNode(camera, node);
+    } else {
+        DrawDefaultNode(camera, node);
+    }
+}
+
+void Renderer::DrawSoldierNode(Camera* camera, SceneNode* node) {
+    glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
+    UpdateShaderMatrices();
+
+    Matrix4 modelMatrix = node->GetWorldTransform() * Matrix4::Scale(node->GetModelScale());
+    glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+
+    glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+    nodeTexture = soldiermatTextures[0];
+    glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
+
+    vector<Matrix4> frameMatrices;
+    const Matrix4* invBindPose = node->GetMesh()->GetInverseBindPose();
+    const Matrix4* frameData = node->GetAnimation()->GetJointData(node->GetCurrentFrame());
+
+    for (unsigned int i = 0; i < node->GetMesh()->GetJointCount(); ++i) {
+        frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+    }
+
+    glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "joints"),
+                       frameMatrices.size(), false, (float*)frameMatrices.data());
+
+    for (int i = 0; i < node->GetMesh()->GetSubMeshCount(); ++i) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, node->GetTextures()[i]);
+        node->GetMesh()->DrawSubMesh(i);
+    }
+}
+
+void Renderer::DrawDefaultNode(Camera* camera, SceneNode* node) {
+    UpdateShaderMatrices();
+
+    glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "diffuseTex"), 0);
+
+    Matrix4 modelMatrix = node->GetWorldTransform() * Matrix4::Scale(node->GetModelScale());
+    glUniformMatrix4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
+    glUniform4fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "nodeColour"), 1, (float*)&node->GetColour());
+
+    glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+    nodeTexture = node->GetTexture();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, nodeTexture);
+
+    glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "useTexture"), nodeTexture);
+    node->Draw(*this);
+}
+
+#pragma endregion
 
 
 //Sky,water,terrain
@@ -765,56 +728,6 @@ void Renderer::DrawHeightmapNoLight()
 
 	heightMap->Draw();
 }
-void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
-{
-	if (SW)
-	{
-		BindShader(waterShader);
-		SetShaderLight(*light);
-		Vector3 hSize = heightMap->GetHeightmapSize();
-
-		modelMatrix = Matrix4::Translation(hSize * 0.5f) *
-			Matrix4::Scale(hSize) *
-			Matrix4::Rotation(90, Vector3(1, 0, 0));
-
-		textureMatrix = Matrix4::Translation(Vector3(flowSpeed, 0.0f, flowSpeed)) *
-			Matrix4::Scale(Vector3(5, 5, 5)) *
-			Matrix4::Rotation(flowRotate, Vector3(0, 0, 1));
-
-		projMatrix = defaultprojMatrix;
-		viewMatrix = camera->BuildViewMatrix();
-		UpdateShaderMatrices();
-	}
-	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(),
-		"cameraPos"), 1, (float*)&camera->GetPosition());
-
-	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
-		"diffuseTex"), 0);
-
-	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
-		"bumpTex"), 1);
-
-	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
-		"cubeTex"), 2);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, waterBump);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, waterTex);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapSunset);
-
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	modelMatrix = Matrix4::Translation(Vector3(hSize.x-2000, hSize.y-200.0f, hSize.z-2000)) *
-		Matrix4::Scale(hSize*0.5) *
-		Matrix4::Rotation(90, Vector3(1, 0, 0));
-	UpdateShaderMatrices();
-
-	skyboxQuad->Draw();
-}
-
 
 
 //switch Scene
@@ -866,6 +779,57 @@ void Renderer::RenderSceneNight()
 
 	ClearNodeLists();
 }
+
+void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
+{
+	if (SW)
+	{
+		BindShader(waterShader);
+		SetShaderLight(*light);
+		Vector3 hSize = heightMap->GetHeightmapSize();
+
+		modelMatrix = Matrix4::Translation(hSize * 0.5f) *
+			Matrix4::Scale(hSize) *
+			Matrix4::Rotation(90, Vector3(1, 0, 0));
+
+		textureMatrix = Matrix4::Translation(Vector3(flowSpeed, 0.0f, flowSpeed)) *
+			Matrix4::Scale(Vector3(5, 5, 5)) *
+			Matrix4::Rotation(flowRotate, Vector3(0, 0, 1));
+
+		projMatrix = defaultprojMatrix;
+		viewMatrix = camera->BuildViewMatrix();
+		UpdateShaderMatrices();
+	}
+	glUniform3fv(glGetUniformLocation(GetCurrentShader()->GetProgram(),
+		"cameraPos"), 1, (float*)&camera->GetPosition());
+
+	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
+		"diffuseTex"), 0);
+
+	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
+		"bumpTex"), 1);
+
+	glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(),
+		"cubeTex"), 2);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, waterBump);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, waterTex);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapSunset);
+
+	Vector3 hSize = heightMap->GetHeightmapSize();
+	modelMatrix = Matrix4::Translation(Vector3(hSize.x-2000, hSize.y-200.0f, hSize.z-2000)) *
+		Matrix4::Scale(hSize*0.5) *
+		Matrix4::Rotation(90, Vector3(1, 0, 0));
+	UpdateShaderMatrices();
+
+	skyboxQuad->Draw();
+}
+
 void Renderer::RenderSceneBlur()
 {
 	BuildNodeLists(root);
@@ -897,9 +861,7 @@ void Renderer::DrawBlurScene()
 	DrawHeightmap(camera, true, false);
 	DrawNodes(camera, true, false);
 	DrawWater(camera, true, false);
-
-
-
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 void Renderer::DrawPostProcess()
@@ -949,8 +911,6 @@ void Renderer::PresentScene()
 	glUniform1i(glGetUniformLocation(blurShader->GetProgram(), "diffuseTex"), 0);
 	skyboxQuad->Draw();
 }
-
-
 
 
 

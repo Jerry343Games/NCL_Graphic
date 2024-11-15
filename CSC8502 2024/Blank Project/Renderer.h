@@ -11,145 +11,150 @@
 
 class Renderer : public OGLRenderer {
 public:
-	Renderer(Window& parent);
-	~Renderer(void);
+    Renderer(Window& parent);
+    ~Renderer(void);
 
-	//different scenes switcher
-	void RenderSceneDaylight()				override;
-	void RenderSceneNight();
-	void RenderSceneBlur();
+    //different scenes switcher
+    void RenderSceneDaylight() override;
+    void RenderSceneNight();
+    void RenderSceneBlur();
 
-	void UpdateScene(float msec)	override;
-	void OrbitCamera(float msc);
-	void SetShaderParticleSize(float f);
+    void UpdateScene(float msec) override;
+    void OrbitCamera(float msc);
+    void SetShaderParticleSize(float f);
 protected:
-	//scenegraph functions
-	void BuildNodeLists(SceneNode* from);
-	void SortNodeLists();
-	void ClearNodeLists();
-	void DrawNodes(Camera* camera, bool SW, bool shadowSW);
-	void DrawNode(Camera* camera, SceneNode* n, bool shadowSW);
+    //scenegraph functions
+    void BuildNodeLists(SceneNode* from);
+    void SortNodeLists();
+    void ClearNodeLists();
+    void DrawNodes(Camera* camera, bool SW, bool shadowSW);
+    void DrawNode(Camera* camera, SceneNode* n, bool shadowSW);
 
-	//skybox,heightmap,water functions
-	void DrawSkybox(GLuint skybox);
-	void DrawHeightmap(Camera* camera, bool SW, bool shadowSW);
-	void DrawWater(Camera* camera, bool SW, bool shadowSW);
-	void DrawHeightmapNoLight();
+    //refactored helper functions
+    void CalculateNodeCameraDistance(SceneNode* node);
+    void AddNodeToAppropriateList(SceneNode* node);
+    void SortTransparentNodes();
+    void SortOpaqueNodes();
 
+    void SetupShader(Camera* camera, SceneNode* node, bool shadowSW);
+    void BindAndSetupShadowShader(Shader* shader);
+    void BindAndSetupSceneShader(Shader* shader);
 
-	//post processing
-	void DrawBlurScene();
-	void DrawPostProcess();
-	void PresentScene();
+    void DrawSoldierNode(Camera* camera, SceneNode* node);
+    void UploadJointMatrices(SceneNode* node);
+    void DrawDefaultNode(Camera* camera, SceneNode* node);
 
+    //skybox,heightmap,water functions
+    void DrawSkybox(GLuint skybox);
+    void DrawHeightmap(Camera* camera, bool SW, bool shadowSW);
+    void DrawWater(Camera* camera, bool SW, bool shadowSW);
+    void DrawHeightmapNoLight();
 
-	//deferred shading
-	void DrawScene();
-	void DrawPointLights();
-	void CombineBuffers();
-	void GenerateScreenTexture(GLuint& into, bool depth = false);
+    //post processing
+    void DrawBlurScene();
+    void DrawPostProcess();
+    void PresentScene();
 
+    //deferred shading
+    void DrawScene();
+    void DrawPointLights();
+    void CombineBuffers();
+    void GenerateScreenTexture(GLuint& into, bool depth = false);
 
-	SceneNode* root;
-	SceneNode* boneNode;
-	SceneNode* soldierNode;
+    SceneNode* root;
+    SceneNode* boneNode;
+    SceneNode* soldierNode;
 
-	HeightMap* heightMap;
-	Light* light;
-	Light* pointLights;
-	Camera* generalCamera;
-	Camera* camera;
+    HeightMap* heightMap;
+    Light* light;
+    Light* pointLights;
+    Camera* generalCamera;
+    Camera* camera;
 
-	Mesh* skyboxQuad;
-	Mesh* PresentQuad;
-	Mesh* cube;
-	Mesh* sphere;
-	Mesh* bone;
-	Mesh* rocksphere;
-	Mesh* cactus_12;
-	Mesh* cactus_09;
-	Mesh* soldier;
-	Mesh* rock;
+    Mesh* skyboxQuad;
+    Mesh* PresentQuad;
+    Mesh* cube;
+    Mesh* sphere;
+    Mesh* bone;
+    Mesh* rocksphere;
+    Mesh* cactus_12;
+    Mesh* cactus_09;
+    Mesh* soldier;
+    Mesh* rock;
 
-	MeshAnimation* soldierAnim;
-	MeshMaterial* soldierMat;
+    MeshAnimation* soldierAnim;
+    MeshMaterial* soldierMat;
 
-	Shader* skyboxShader;
-	Shader* scenegraphShader;
-	Shader* lightShader;
-	Shader* heightmapNolightShader;
-	Shader* waterShader;
-	Shader* soldierShader;
-	Shader* processShader;
-	Shader* postShader;
-	Shader* emitterShader;
-	Shader* pointlightShader;
-	Shader* combineShader;
-	Shader* blurShader;
+    Shader* skyboxShader;
+    Shader* scenegraphShader;
+    Shader* lightShader;
+    Shader* heightmapNolightShader;
+    Shader* waterShader;
+    Shader* soldierShader;
+    Shader* processShader;
+    Shader* postShader;
+    Shader* emitterShader;
+    Shader* pointlightShader;
+    Shader* combineShader;
+    Shader* blurShader;
 
-	Shader* shadowShader;
-	Shader* heightmapshadowShader;
-	Shader* watershadowShader;
-	Shader* soldiershadowShader;
-	Shader* bumpshadowShader;
-	Shader* PerPixelshaodwShader;
-	Shader* animationshadowShader;
+    Shader* shadowShader;
+    Shader* heightmapshadowShader;
+    Shader* watershadowShader;
+    Shader* soldiershadowShader;
+    Shader* bumpshadowShader;
+    Shader* PerPixelshaodwShader;
+    Shader* animationshadowShader;
 
-	//FBO
-	GLuint bufferFBO;
-	GLuint bufferDepthTex;
-	GLuint bufferNormalTex;
-	GLuint bufferColourTex[2];
+    //FBO
+    GLuint bufferFBO;
+    GLuint bufferDepthTex;
+    GLuint bufferNormalTex;
+    GLuint bufferColourTex[2];
 
-	GLuint pointLightFBO;
-	GLuint lightDiffuseTex;
-	GLuint lightSpecularTex;
+    GLuint pointLightFBO;
+    GLuint lightDiffuseTex;
+    GLuint lightSpecularTex;
 
-	GLuint processFBO;
+    GLuint processFBO;
 
-	GLuint blurbufferFBO;
-	GLuint blurbufferColourTex[2];
-	GLuint blurbufferDepthTex;
+    GLuint blurbufferFBO;
+    GLuint blurbufferColourTex[2];
+    GLuint blurbufferDepthTex;
 
-	GLuint shadowFBO;
-	GLuint shadowTex;
+    GLuint shadowFBO;
+    GLuint shadowTex;
 
+    //textures
+    GLuint currentSkybox;
+    GLuint cubeMapSunset;
+    GLuint cubeMapNight;
+    GLuint earthBump;
+    GLuint earthTex;
+    GLuint nodeTexture;
+    GLuint nodeBumpTexture;
+    GLuint waterTex;
+    GLuint cactusTex;
+    GLuint waterBump;
+    GLuint rockTex;
+    GLuint glassTex;
+    vector<GLuint> soldiermatTextures;
+    vector<GLuint> femalematTextures;
 
-	//textures
-	GLuint currentSkybox;
-	GLuint cubeMapSunset;
-	GLuint cubeMapNight;
-	GLuint earthBump;
-	GLuint earthTex;
-	GLuint nodeTexture;
-	GLuint nodeBumpTexture;
-	GLuint waterTex;
-	GLuint cactusTex;
-	GLuint waterBump;
-	GLuint rockTex;
-	GLuint glassTex;
-	vector<GLuint> soldiermatTextures;
-	vector<GLuint> femalematTextures;
+    vector<SceneNode*> transparentNodeList;
+    vector<SceneNode*> nodeList;
 
+    //water properties
+    float flowRotate;
+    float flowSpeed;
 
-	vector<SceneNode*> transparentNodeList;
-	vector<SceneNode*> nodeList;
+    //animation properties
+    int soldiercurrentFrame;
+    float soldierframeTime;
 
-	//water properties
-	float flowRotate;
-	float flowSpeed;
+    //default projMatrix and rockMovMatrix
+    Matrix4 defaultprojMatrix;
 
-	//animation properties
-	int soldiercurrentFrame;
-	float soldierframeTime;
-
-
-	//default projMatrix and rockMovMatrix
-	Matrix4 defaultprojMatrix;
-	Matrix4 rockmodelMatrix;
-
-	//rain
-	Rain* rain;
-
+    //rain
+    Rain* rain;
 };
-
