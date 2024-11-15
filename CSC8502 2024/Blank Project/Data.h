@@ -5,7 +5,7 @@
 class Data
 {
 public:
-    // Ïà»úÊý¾Ý
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     struct CameraData {
         struct Position {
             float x = 0.0f;
@@ -14,29 +14,28 @@ public:
         } position;
 
         struct Rotation {
-            float yaw = 0.0f;   // Æ«º½½Ç
-            float pitch = -45.0f; // ¸©Ñö½Ç£¬Ä¬ÈÏ¸©ÊÓ45¶È
+            float yaw = 0.0f;   
+            float pitch = -45.0f; 
         } rotation;
 
-        float radius = 2000.0f; // Ô²ÖÜÔË¶¯µÄ°ë¾¶
-        float speed = -0.1f;    // ËÙ¶È£¬¿ØÖÆÐý×ªËÙ¶È
-        float angle = 0.0f;     // µ±Ç°½Ç¶È
+        float radius = 2000.0f; 
+        float speed = -0.1f;   
+        float angle = 0.0f;     
     } camera;
 
-    // »·¾³¿ØÖÆÊý¾Ý
+
     struct EnvironmentData {
         float waterRotate = 0.0f;
         float waterCycle = 0.0f;
     } environment;
-
-    // ¶¯»­Êý¾Ý
+    
     struct AnimationData {
         float soldierFrameTime = 0.0f;
         int soldierCurrentFrame = 0;
         float rockMoveTime = 0.0f;
     } animation;
 
-    // ³¡¾°Êý¾Ý
+
     struct SceneData {
         struct HeightMapSize {
             float x = 0.0f;

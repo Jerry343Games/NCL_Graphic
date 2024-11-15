@@ -191,8 +191,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	{
 		SceneNode* s = new SceneNode();
 		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-
-		// 在 x 和 z 轴的 0 到 1 之间随机生成浮点数
+		
 		float randomX = static_cast<float>(rand()) / RAND_MAX;
 		float randomZ = static_cast<float>(rand()) / RAND_MAX;
     
@@ -243,7 +242,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	generalCamera = new Camera(-90.0f, 0.0f,heightmapSize * Vector3(0.5f, 10.0f, 0.5f));
 	
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 1.0f),Vector4(1, 1, 1, 1), heightmapSize.x);
-	light2 = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f),Vector4(1, 1, 1, 1), 10000.0f);
+	//light2 = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f),Vector4(1, 1, 1, 1), 10000.0f);
 	pointLights = new Light[5];
 
 	for (int i = 0; i < 5; ++i) 
@@ -263,14 +262,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 
 	//water properties
-	waterRotate = 0.0f;
-	waterCycle = 0.0f;
+	flowRotate = 0.0f;
+	flowSpeed = 0.0f;
 
 	//animation properties
 	soldiercurrentFrame = 0;
 	soldierframeTime = 0.0f;
-
-	rockmovTime = 0.0f;
+	
 	rockmodelMatrix = Matrix4::Translation(heightmapSize * Vector3(0.5f, 1.5f, 0.5f)) * Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 
 	//generate FBOs
@@ -379,17 +377,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
-	//shadow FBO
-	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTex, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-		GL_FRAMEBUFFER_COMPLETE)
-	{
-		return;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//blur FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, blurbufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
@@ -444,7 +431,6 @@ Renderer::~Renderer(void) {
 	//delete others
 	delete camera;
 	delete light;
-	delete light2;
 	delete root;
 	delete[] pointLights;
 
@@ -476,8 +462,9 @@ void Renderer::UpdateScene(float dt) {
 	
 	camera->UpdateCamera(dt);
 	viewMatrix = camera->BuildViewMatrix();
-	waterRotate += dt * 0.5f;
-	waterCycle += dt * 0.15f;
+	
+	flowRotate += dt * 0.5f;
+	flowSpeed += dt * 0.15f;
 
 	soldierframeTime -= dt;
 	while (soldierframeTime < 0.0f)
@@ -486,12 +473,9 @@ void Renderer::UpdateScene(float dt) {
 		soldierframeTime += 1.0f / soldierAnim->GetFrameRate();
 	}
 	soldierNode->SetCurrentFrame(soldiercurrentFrame);
-
-	rockmovTime += dt * 0.5;
+	
 	Vector3 hSize = heightMap->GetHeightmapSize();
-	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
-		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
+
 
 	root->Update(dt);
 }
@@ -531,8 +515,8 @@ void Renderer::OrbitCamera(float dt) {
 	viewMatrix = camera->BuildViewMatrix();
 
 	// ����ԭ�е� waterRotate �� waterCycle ����
-	waterRotate += dt * 0.5f;
-	waterCycle += dt * 0.15f;
+	flowRotate += dt * 0.5f;
+	flowSpeed += dt * 0.15f;
 
 	// ���¶�����ʱ�䴦��
 	soldierframeTime -= dt;
@@ -541,13 +525,6 @@ void Renderer::OrbitCamera(float dt) {
 		soldierframeTime += 1.0f / soldierAnim->GetFrameRate();
 	}
 	soldierNode->SetCurrentFrame(soldiercurrentFrame);
-
-	// ���� rockmovTime
-	rockmovTime += dt * 0.5;
-	Vector3 hSize = heightMap->GetHeightmapSize();
-	rockmodelMatrix = Matrix4::Translation(hSize * Vector3(0.4f + sin(rockmovTime), 1.5f, 0.4f)) *
-		Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
-		Matrix4::Rotation(rockmovTime * 10, hSize * Vector3(0.0f, 0.5f, 0.0f));
 	
 	root->Update(dt);
 }
@@ -608,7 +585,6 @@ void Renderer::DrawNode(Camera* camera, SceneNode* n, bool shadowSW)
 				BindShader(animationshadowShader);
 				viewMatrix = camera->BuildViewMatrix();
 				projMatrix = defaultprojMatrix;
-				SetShaderLight(*light2);
 				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
 				glActiveTexture(GL_TEXTURE2);
 				glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -616,7 +592,6 @@ void Renderer::DrawNode(Camera* camera, SceneNode* n, bool shadowSW)
 			else if (n->GetType() == TYPE_NORMAL)
 			{
 				BindShader(PerPixelshaodwShader);
-				SetShaderLight(*light2);
 				viewMatrix = camera->BuildViewMatrix();
 				projMatrix = defaultprojMatrix;
 				glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
@@ -744,7 +719,6 @@ void Renderer::DrawHeightmap(Camera* camera, bool SW, bool shadowSW)
 		else
 		{
 			BindShader(heightmapshadowShader);
-			SetShaderLight(*light2);
 			glUniform1i(glGetUniformLocation(GetCurrentShader()->GetProgram(), "shadowTex"), 2);
 			glActiveTexture(GL_TEXTURE2);
 			glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -803,9 +777,9 @@ void Renderer::DrawWater(Camera* camera, bool SW, bool shadowSW)
 			Matrix4::Scale(hSize) *
 			Matrix4::Rotation(90, Vector3(1, 0, 0));
 
-		textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) *
+		textureMatrix = Matrix4::Translation(Vector3(flowSpeed, 0.0f, flowSpeed)) *
 			Matrix4::Scale(Vector3(5, 5, 5)) *
-			Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
+			Matrix4::Rotation(flowRotate, Vector3(0, 0, 1));
 
 		projMatrix = defaultprojMatrix;
 		viewMatrix = camera->BuildViewMatrix();

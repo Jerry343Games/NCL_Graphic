@@ -3,16 +3,9 @@
 
 //PRESS 1 : FREECAMERA
 //PRESS 2 : AUTOCAMERA position forward
-//PRESS 3 : DEFAULT CAMERA POSITION
-//PRESS 4 : AUTOCAMERA up
-//PRESS 5 : AUTOCAMERA left
-//PRESS 6 : AUTOCAMERA down
-//PRESS 7 : AUTOCAMERA right
-// 
 //PRESS Z : NORMAL RENDERING
 //PRESS X : DEFERRED RENDERING 
 //PRESS C : BLUR RENDERING
-//PRESS V : SHADOW RENDERING
 
 
 
@@ -20,7 +13,7 @@
 
 
 int main() {
-	Window w("Make your own project!", 1280, 720, false);
+	Window w("Make your own project!", 1980, 1080, false);
 
 	if (!w.HasInitialised()) {
 		return -1;

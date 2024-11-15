@@ -56,7 +56,6 @@ protected:
 
 	HeightMap* heightMap;
 	Light* light;
-	Light* light2;
 	Light* pointLights;
 	Camera* generalCamera;
 	Camera* camera;
@@ -137,13 +136,12 @@ protected:
 	vector<SceneNode*> nodeList;
 
 	//water properties
-	float waterRotate;
-	float waterCycle;
+	float flowRotate;
+	float flowSpeed;
 
 	//animation properties
 	int soldiercurrentFrame;
 	float soldierframeTime;
-	float rockmovTime;
 
 
 	//default projMatrix and rockMovMatrix
